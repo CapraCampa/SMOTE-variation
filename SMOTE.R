@@ -4,10 +4,49 @@
 library(smotefamily)
 library(caret)
 library(ROSE)
+library(MASS)
+library(ggplot2)
 
 # simulate data
 # where each dataset has different parameters
 # (size of the dataset and proportion of rare examples over all examples)
+
+# Parameters
+y <- c(0, 1)
+train_size <- c(250, 1000, 5000)
+pi <- c(0.1, 0.05, 0.025, 0.01)
+
+mu_0 <- c(0, 0)
+cov_matrix_0 <- matrix(c(1, 0, 0, 1), nrow = 2)
+
+mu_1 <- c(1, 1)
+cov_matrix_1 <- matrix(c(1, -0.5, -0.5, 1), nrow = 2)
+
+for (size in train_size) {
+  for (prob in pi) {
+    # Calculate number of samples per class
+    n_0 <- round(size * (1 - prob))  # Class 0
+    n_1 <- round(size * prob)       # Class 1
+    
+    # Generate data for class 0
+    x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+    x_0 <- data.frame(x_0)
+    x_0$y <- rep(0, n_0)
+    
+    # Generate data for class 1
+    x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+    x_1 <- data.frame(x_1)
+    x_1$y <- rep(1, n_1)
+    
+    # Combine and shuffle
+    combined_data <- rbind(x_0, x_1)
+    shuffled_data <- combined_data[sample(nrow(combined_data)), ]
+    
+    # Dynamically name the dataframe
+    df_name <- paste0("x_", size, "_", gsub("\\.", "", as.character(prob)))
+    assign(df_name, shuffled_data)
+  }
+}
 
 
 # data <- sample_generator(n, ratio = 0.8, xlim = c(0, 1), ylim = c(0, 1), radius = 0.25, overlap = -0.05, outcast_ratio = 0.01)
