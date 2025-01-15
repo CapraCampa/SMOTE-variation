@@ -13,6 +13,9 @@ library(rpart.plot)
 library(rattle)
 library(MCMCpack)
 library(ROCR)
+library(patchwork)
+library(kknn)
+library(class) # Ensure the class library is loaded for kNN
 
 
 # our new function, there have to be at least  
@@ -100,22 +103,28 @@ cov_matrix_1 <- matrix(c(1, -0.5, -0.5, 1), nrow = 2)
 # Create a list of 12 lists to store results for each trainset
 results <- vector("list", 12)  # One entry for each trainset
 names(results) <- paste0("Trainset_", 1:12)
-for (l in 1:12){
+
+# Loop through each trainset and initialize model results
+for (l in 1:12) {
   results[[l]] <- list(
-    logistic_regressor = vector("list", 3),  # 3 versions for logistic regression
+    knn = vector("list", 3),         # 3 versions for KNN
     decision_tree = vector("list", 3)        # 3 versions for decision tree
   )
+  
+  # Loop through each model type and each version to initialize the sublists
   for (model_type in c("logistic_regressor", "decision_tree")) {
     for (version in 1:3) {
       results[[l]][[model_type]][[version]] <- list(
         auc = numeric(100),        # AUC values
-        precision = numeric(100), # Precision values
-        recall = numeric(100),    # Recall values
-        f1 = numeric(100)         # F1 values
+        precision = numeric(100),   # Precision values
+        recall = numeric(100),      # Recall values
+        f1 = numeric(100)           # F1 values
       )
     }
   }
 }
+
+
 
 n_simulations = 100
 # 100 simulations !!!!!!!!!!!!!!!!!!!
@@ -185,7 +194,7 @@ for (k in 1:n_simulations){
     # balance dataset with SMOTE
     IR <- nrow(trainset[trainset$y == 1, ]) / nrow(trainset)
     data.smote <- SMOTE(trainset[,-3], trainset[,3], K = 5, dup_size = 0)$data
-    p <- ggplot(data.smote, aes(x = X1, y = X2, color = factor(class))) + 
+    p1 <- ggplot(data.smote, aes(x = X1, y = X2, color = factor(class))) + 
       geom_point() + 
       labs(title = "Smote Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
@@ -197,11 +206,17 @@ for (k in 1:n_simulations){
     # balance dataset with SMOTE variant
     
     data.smote.dirichlet <- SMOTE.DIRICHLET(trainset[,-3], trainset[,3], K = 5, dup_size = 0)$data
-    p <- ggplot(data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class))) + 
+    p2 <- ggplot(data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class))) + 
       geom_point() + 
       labs(title = "Dirichlet Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
     #print(p)
+    
+    # Combine the two plots side-by-side
+    combined_plot <- p1 + p2 + 
+      plot_layout(ncol = 2) # Arrange plots in a single row
+    
+    #print(combined_plot)
     
     data.smote.dirichlet$class <- factor(data.smote.dirichlet$class) #?????
     dirichlet_IR <- nrow(data.smote.dirichlet[data.smote.dirichlet$class == 1, ]) / nrow(data.smote.dirichlet)
@@ -328,6 +343,95 @@ for (k in 1:n_simulations){
   }
   
 }
+# Boxplot of AUC under Decision Tree --------------------------------------
+
+
+
+# Prepare data for plotting
+plot_data <- data.frame(
+  trainset = integer(),
+  version = integer(),
+  auc = numeric()
+)
+
+for (l in 1:12) {
+  for (version in 1:3) {
+    # Extract AUC values from the decision tree for the current version
+    auc_values <- results[[l]]$decision_tree[[version]]$auc
+    temp_df <- data.frame(
+      trainset = paste0("Trainset_", l),
+      version = version,
+      auc = auc_values
+    )
+    plot_data <- rbind(plot_data, temp_df)
+  }
+}
+
+## Create box plots for AUC values of decision tree models across all versions
+ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+  geom_boxplot() +
+  facet_wrap(~ trainset, ncol = 4) +
+  scale_fill_manual(
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+  ) +
+  labs(
+    title = "Boxplots of AUC values for Decision Tree Model by Version",
+    x = "Version",
+    y = "AUC",
+    fill = "Model Version"  # Legend title
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+
+# Boxplot of AUC under Logistic Regression --------------------------------
+
+
+# Prepare data for plotting
+plot_data <- data.frame(
+  trainset = integer(),
+  version = integer(),
+  auc = numeric()
+)
+
+for (l in 1:12) {
+  for (version in 1:3) {
+    # Extract AUC values from the decision tree for the current version
+    auc_values <- results[[l]]$logistic_regressor[[version]]$auc
+    temp_df <- data.frame(
+      trainset = paste0("Trainset_", l),
+      version = version,
+      auc = auc_values
+    )
+    plot_data <- rbind(plot_data, temp_df)
+  }
+}
+
+## Create box plots for AUC values of decision tree models across all versions
+ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+  geom_boxplot() +
+  facet_wrap(~ trainset, ncol = 4) +
+  scale_fill_manual(
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+  ) +
+  labs(
+    title = "Boxplots of AUC values for Logistic Regression Model by Version",
+    x = "Version",
+    y = "AUC",
+    fill = "Model Version"  # Legend title
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
 
 
 
