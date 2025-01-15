@@ -19,8 +19,6 @@ library(ROCR)
 # 2 points within the rare class
 SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0) 
 {
-  #X = trainset[,-3]
-  #target = trainset[,3]
   ncD = ncol(X)
   n_target = table(target)
   classP = names(which.min(n_target))
@@ -37,6 +35,7 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
   # sum_dup is the number of new points to be generated for each point
   # If dup_size is zero, it returns the number of rounds 
   # to duplicate positive to nearly equal to the number of negative instances
+  # (50% rare, 50% common)
   sum_dup = n_dup_max(sizeP + sizeN, sizeP, sizeN, dup_size)
   syn_dat = NULL
   for (i in 1:sizeP) {
@@ -118,7 +117,7 @@ for (l in 1:12){
   }
 }
 
-n_simulations = 1
+n_simulations = 100
 # 100 simulations !!!!!!!!!!!!!!!!!!!
 for (k in 1:n_simulations){
   trainsets <- list()
@@ -170,42 +169,39 @@ for (k in 1:n_simulations){
   
   ###############################################################################
   # train and test on all datasets
-  # length(trainsets)
-  for (i in 1:1){
-    trainset <- trainsets[[12]]
+  for (i in 1:length(trainsets)){
+    trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
     
     p <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
       geom_point() + 
       labs(title = "Train Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
-    print(p)
+    #print(p)
+    
     # (train sets will be different,
     # but test set is the same for all methods)
     trainset$y <- as.factor(trainset$y) # for some reason it needs this???
     # balance dataset with SMOTE
     IR <- nrow(trainset[trainset$y == 1, ]) / nrow(trainset)
-    #set.seed(123) # do we need to put it everytime? or do we need to compute average?
     data.smote <- SMOTE(trainset[,-3], trainset[,3], K = 5, dup_size = 0)$data
     p <- ggplot(data.smote, aes(x = X1, y = X2, color = factor(class))) + 
       geom_point() + 
       labs(title = "Smote Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
-    print(p)
+    #print(p)
     
     data.smote$class <- factor(data.smote$class) #?????
     smote_IR <- nrow(data.smote[data.smote$class == 1, ]) / nrow(data.smote)
     
     # balance dataset with SMOTE variant
-    #set.seed(123)
     
     data.smote.dirichlet <- SMOTE.DIRICHLET(trainset[,-3], trainset[,3], K = 5, dup_size = 0)$data
-    #data.smote.dirichlet <- D_result$data
     p <- ggplot(data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class))) + 
       geom_point() + 
       labs(title = "Dirichlet Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
-    print(p)
+    #print(p)
     
     data.smote.dirichlet$class <- factor(data.smote.dirichlet$class) #?????
     dirichlet_IR <- nrow(data.smote.dirichlet[data.smote.dirichlet$class == 1, ]) / nrow(data.smote.dirichlet)
@@ -228,6 +224,7 @@ for (k in 1:n_simulations){
     fit <- glm(y ~ . , data = trainset, family = binomial(link = "logit"))
     fit.smote <- glm(class ~ . , data = data.smote, family = binomial(link = "logit"))
     fit.smote.dirichlet <- glm(class ~ . , data = data.smote.dirichlet, family = binomial(link = "logit"))
+    
     test_index <- ceiling((i/3))
     testset <- testsets[[test_index]]
     
@@ -331,6 +328,8 @@ for (k in 1:n_simulations){
   }
   
 }
+
+
 
 
 # problem to address: if I have less than 6 observations in the rare class
