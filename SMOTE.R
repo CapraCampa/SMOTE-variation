@@ -154,7 +154,7 @@ for (k in 1:n_simulations){
       
       # Combine and shuffle
       combined_data <- rbind(x_0, x_1)
-
+      
       # Save train dataset in the list
       dataset_name <- paste0("train_", size, "_", gsub("\\.", "", as.character(prob)))
       trainsets[[dataset_name]] <- combined_data
@@ -162,8 +162,8 @@ for (k in 1:n_simulations){
     
     
     # With the same method and same parameter pi, compute test set
-    n_0 <- round(600 * (1 - prob))  
-    n_1 <- round(600 * prob)       
+    n_0 <- round(250 * (1 - prob))  
+    n_1 <- round(250 * prob)       
     x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
     x_0 <- data.frame(x_0)
     x_0$y <- rep(0, n_0)
@@ -171,14 +171,14 @@ for (k in 1:n_simulations){
     x_1 <- data.frame(x_1)
     x_1$y <- rep(1, n_1)
     combined_data <- rbind(x_0, x_1)
-
+    
     # Save test dataset in the list
     dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
     testsets[[dataset_name]] <- combined_data
   }
   
   ###############################################################################
-
+  
   for (i in 1:12){
     trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
@@ -191,7 +191,7 @@ for (k in 1:n_simulations){
       theme_minimal()
     #print(p)
     
-
+    
     
     # (train sets will be different,
     # but test set is the same for all methods)
@@ -428,7 +428,7 @@ plot_data <- data.frame(
 
 for (l in 1:12) {
   for (version in 1:3) {
-    # Extract AUC values from the logistic_regressor for the current version
+    # Extract AUC values from the decision tree for the current version
     auc_values <- results[[l]]$logistic_regressor[[version]]$auc
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
