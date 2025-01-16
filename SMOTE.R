@@ -162,8 +162,8 @@ for (k in 1:n_simulations){
     
     
     # With the same method and same parameter pi, compute test set
-    n_0 <- round(250 * (1 - prob))  
-    n_1 <- round(250 * prob)       
+    n_0 <- round(600 * (1 - prob))  
+    n_1 <- round(600 * prob)       
     x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
     x_0 <- data.frame(x_0)
     x_0$y <- rep(0, n_0)
@@ -428,7 +428,7 @@ plot_data <- data.frame(
 
 for (l in 1:12) {
   for (version in 1:3) {
-    # Extract AUC values from the decision tree for the current version
+    # Extract AUC values from the logistic_regressor for the current version
     auc_values <- results[[l]]$logistic_regressor[[version]]$auc
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
