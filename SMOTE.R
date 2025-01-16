@@ -29,12 +29,15 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
   P_set = subset(X, target == names(which.min(n_target)))[sample(min(n_target)), 
   ]
   N_set = subset(X, target != names(which.min(n_target)))
+  
   P_class = rep(names(which.min(n_target)), nrow(P_set))
   N_class = target[target != names(which.min(n_target))]
   sizeP = nrow(P_set)
-  K <- min(sizeP - 1, 5)
+  K <- min(sizeP - 1, K)
   sizeN = nrow(N_set)
   knear = knearest(P_set, P_set, K)
+  
+  
   # sum_dup is the number of new points to be generated for each point
   # If dup_size is zero, it returns the number of rounds 
   # to duplicate positive to nearly equal to the number of negative instances
@@ -48,16 +51,16 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
     g <- matrix(0, nrow = sum_dup, ncol = K)
     for(j in 1:sum_dup) {
       # Why use 4?
-      g[j, ] <- MCMCpack::rdirichlet(1, rep(4, K))
+      g[j, ] <- MCMCpack::rdirichlet(1, rep(2, K))
     }
     
     # multiplies the sum_dup weights for the k neighbors
     # in this way I obtain sum_dup new points
     # I put the check in the case of K=1
     if (K==1){
-      syn_i = g %*% matrix(as.matrix(P_set[knear[i],]), ncol = ncD, byrow = TRUE)
+      syn_i = g %*% matrix(as.matrix(P_set[knear[i],]), ncol = ncD, byrow = F)
     }else{
-      syn_i = g %*% matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = TRUE)
+      syn_i = g %*% matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = F)
     }
     
     syn_dat = rbind(syn_dat, syn_i)
@@ -175,30 +178,37 @@ for (k in 1:n_simulations){
   }
   
   ###############################################################################
-  # train and test on all datasets
-  for (i in 1:length(trainsets)){
+
+  for (i in 1:12){
     trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
     
     p <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
-      geom_point() + 
+      geom_point(aes(size = factor(y)), alpha = 0.8) + 
+      scale_color_manual(values = c("grey", "blue")) + 
+      scale_size_manual(values = c(1, 2)) +
       labs(title = "Train Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
     #print(p)
+    
+
     
     # (train sets will be different,
     # but test set is the same for all methods)
     trainset$y <- as.factor(trainset$y) # for some reason it needs this???
     # balance dataset with SMOTE
     IR <- nrow(trainset[trainset$y == 1, ]) / nrow(trainset)
-    smote <- SMOTE(trainset[,-3], trainset[,3], K = 5, dup_size = 0)
+    smote <- SMOTE(trainset[,-3], trainset[,3], K = 3, dup_size = 0)
     data.smote <- smote$data
     syn.data.smote <- smote$syn_data
-    p1 <- ggplot(data.smote, aes(x = X1, y = X2, color = factor(class))) + 
-      geom_point(alpha = 0.3) + 
-      geom_point(data = syn.data.smote, aes(x = X1, y = X2)) +
-      labs(title = "Smote Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
+    p1 <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
+      geom_point(aes(size = factor(y)), alpha = 0.8, show.legend = c(color = TRUE, size = FALSE)) + 
+      scale_color_manual(values = c("grey", "blue")) + 
+      scale_size_manual(values = c(1, 2)) +
+      geom_point(data = syn.data.smote, aes(x = X1, y = X2, color = factor(class)), shape = 17, alpha = 0.4) +
+      labs(title = "SMOTE", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
+    
     #print(p1)
     
     data.smote$class <- factor(data.smote$class) #?????
@@ -206,18 +216,17 @@ for (k in 1:n_simulations){
     
     # balance dataset with SMOTE variant
     
-    smote.dirichlet <- SMOTE.DIRICHLET(trainset[,-3], trainset[,3], K = 5, dup_size = 0)
+    smote.dirichlet <- SMOTE.DIRICHLET(trainset[,1:2], trainset$y, K = 5, dup_size = 0)
     data.smote.dirichlet <- smote.dirichlet$data
-    syn_data.smote.dirichlet <- smote.dirichlet$syn_dat
-    p2 <- ggplot(data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class))) + 
-      geom_point(alpha = 0.3) + 
-      geom_point(data = syn_data.smote.dirichlet, aes(x = X1, y = X2)) +
-      labs(
-        title = "Dirichlet Dataset",
-        x = "Feature 1",
-        y = "Feature 2",
-        color = "Class"
-      ) +
+    syn.data.smote.dirichlet <- smote.dirichlet$syn_data
+    x <- data.smote.dirichlet[,1:2]
+    y <- data.smote.dirichlet$class
+    p2 <- ggplot(x, aes(x = X1, y = X2, color = factor(y))) + 
+      geom_point(aes(size = factor(y)), alpha = 0.8, show.legend = c(color = TRUE, size = FALSE)) + 
+      scale_color_manual(values = c("grey", "blue")) + 
+      scale_size_manual(values = c(1, 2)) +
+      geom_point(data = syn.data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class)), shape = 17, alpha = 0.4) +
+      labs(title = "SMOTE.DIRICHLET", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
     
     #print(p2)
@@ -372,7 +381,7 @@ plot_data <- data.frame(
 for (l in 1:12) {
   for (version in 1:3) {
     # Extract AUC values from the decision tree for the current version
-    auc_values <- results[[l]]$logistic_regressor[[version]]$auc
+    auc_values <- results[[l]]$decision_tree[[version]]$auc
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
       version = version,
@@ -442,7 +451,7 @@ ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
     labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
   ) +
   labs(
-    title = "Boxplots of AUC values for Decision Tree Model by Version",
+    title = "Boxplots of AUC values for Logistic Regression Model by Version",
     x = "Version",
     y = "AUC",
     fill = "Model Version"  # Legend title
