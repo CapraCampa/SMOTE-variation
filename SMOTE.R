@@ -86,7 +86,6 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
 
 ###############################################################################
 
-
 # Parameters
 # y = 0 most frequent class
 # y = 1 less frequent class
@@ -162,8 +161,8 @@ for (k in 1:n_simulations){
     
     
     # With the same method and same parameter pi, compute test set
-    n_0 <- round(250 * (1 - prob))  
-    n_1 <- round(250 * prob)       
+    n_0 <- round(600 * (1 - prob))  
+    n_1 <- round(600 * prob)       
     x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
     x_0 <- data.frame(x_0)
     x_0$y <- rep(0, n_0)
@@ -221,6 +220,8 @@ for (k in 1:n_simulations){
     syn.data.smote.dirichlet <- smote.dirichlet$syn_data
     x <- data.smote.dirichlet[,1:2]
     y <- data.smote.dirichlet$class
+    
+    
     p2 <- ggplot(x, aes(x = X1, y = X2, color = factor(y))) + 
       geom_point(aes(size = factor(y)), alpha = 0.8, show.legend = c(color = TRUE, size = FALSE)) + 
       scale_color_manual(values = c("grey", "blue")) + 
@@ -463,8 +464,116 @@ ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
   )
 
 
+# -------------------------------------------------------------------------
 
 
+plot_data <- data.frame(
+  trainset = integer(),
+  version = integer(),
+  f1 = numeric()
+)
+
+for (l in 1:12) {
+  for (version in 1:3) {
+    # Extract AUC values from the decision tree for the current version
+    f1_values <- results[[l]]$decision_tree[[version]]$f1
+    temp_df <- data.frame(
+      trainset =  names(trainsets)[l],
+      version = version,
+      f1 = f1_values
+    )
+    plot_data <- rbind(plot_data, temp_df)
+  }
+}
+
+# Convert trainset to a factor with the specified levels
+plot_data$trainset <- factor(plot_data$trainset, levels = levels)
+
+
+# Create the plot
+ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
+  geom_boxplot() +
+  facet_wrap(~ trainset, ncol = 4) +
+  scale_fill_manual(
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+  ) +
+  labs(
+    title = "Boxplots of F1 values for Decision Tree Model by Version",
+    x = "Version",
+    y = "F1",
+    fill = "Model Version"  # Legend title
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+
+
+
+
+plot_data <- data.frame(
+  trainset = integer(),
+  version = integer(),
+  f1 = numeric()
+)
+
+for (l in 1:12) {
+  for (version in 1:3) {
+    # Extract AUC values from the decision tree for the current version
+    f1_values <- results[[l]]$logistic_regressor[[version]]$f1
+    temp_df <- data.frame(
+      trainset =  names(trainsets)[l],
+      version = version,
+      f1 = f1_values
+    )
+    plot_data <- rbind(plot_data, temp_df)
+  }
+}
+
+# Convert trainset to a factor with the specified levels
+plot_data$trainset <- factor(plot_data$trainset, levels = levels)
+
+# Create the plot
+ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
+  geom_boxplot() +
+  facet_wrap(~ trainset, ncol = 4) +
+  scale_fill_manual(
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+  ) +
+  labs(
+    title = "Boxplots of F1 values for Logistic Regression Model by Version",
+    x = "Version",
+    y = "F1",
+    fill = "Model Version"  # Legend title
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+# -------------------------------------------------------------------------
+
+# pred <- cbind(prob_class_0, prob_class_1)
+# 
+# pred <- as.data.frame(pred)
+# 
+# pred$pred <- ifelse(pred$prob_class_0>pred$prob_class_1, 0, 1)
+# 
+# predicted <- pred$pred
+# actual <- testset$y
+# 
+# confusion_matrix <- table(predicted, actual)
+# 
+# library(pheatmap)
+# 
+# pheatmap(confusion_matrix, display_numbers = TRUE, main = "Confusion Matrix")
 
 # problem to address: if I have less than 6 observations in the rare class
 # the SMOTE classic technique doesn't work
