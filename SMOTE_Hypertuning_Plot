@@ -5,6 +5,7 @@
 #install.packages("rpart.plot")
 #install.packages("patchwork")
 #install.packages("ROCR")
+#install.packages("tidyr")
 library(patchwork)
 library(smotefamily)
 library(caret)
@@ -17,6 +18,7 @@ library(rattle)
 library(MCMCpack)
 library(ROCR)
 library(dplyr)
+library(tidyr)
 
 setwd("C:/Users/andre/Desktop/stat/Progetto")
 
@@ -128,8 +130,18 @@ Dir_SMOTE_Sim = function(n_sim, K, alfa) {
     testsets <- list()
     
     # Simulate data for all train datasets (and corresponding test sets)
+
     for (prob in pi) {
       for (size in train_size) {
+        
+        
+        if (K >= size*prob){
+          
+          next
+          
+        }
+        
+        
         # Calculate number of samples per class
         n_0 <- round(size * (1 - prob))  # Class 0
         n_1 <- round(size * prob)       # Class 1
@@ -245,7 +257,7 @@ Dir_SMOTE_Sim = function(n_sim, K, alfa) {
       testset <- testsets[[test_index]]
       
       # predict all models
-      pred.tree <- predict(tree, newdata = testset, type = "vector")
+      pred.tree <- predict(tree, newdata = testset, type = "prob")
       pred.tree.smote <- predict(tree.smote, newdata = testset,type = "prob")
       pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = testset)
       
@@ -325,7 +337,7 @@ Dir_SMOTE_Sim = function(n_sim, K, alfa) {
         results[[i]][["decision_tree"]][[1]]$precision[k] <- metrics.tree$precision
       }
       results[[i]][["decision_tree"]][[1]]$recall[k] <- metrics.tree$recall
-      if (is.nan(metrics.tree$precision)){
+      if (is.nan(metrics.tree$F)){
         results[[i]][["decision_tree"]][[1]]$f1[k] <- 0
       }else{
         results[[i]][["decision_tree"]][[1]]$f1[k] <- metrics.tree$F
@@ -352,10 +364,9 @@ Dir_SMOTE_Sim = function(n_sim, K, alfa) {
 
 
 ###############################################################################
-### Hypertuning
+### Simulation
 #############################################################################
 # Funzione per valutare AUC su più valori di k e alfa
-# Assicurati di aver già definito e caricato la tua Dir_SMOTE_Sim()
 
 Dir_DF = function(k_values, alpha_values, n_sim = 10) {
   
@@ -429,7 +440,10 @@ Dir_DF = function(k_values, alpha_values, n_sim = 10) {
   return(results_df)
 }
 
-results = Dir_DF(k_values = 2:8, alpha_values = 1:8, n_sim = 5)
+fin_alpha = c(0.01,0.1,0.5,1,2,3,4,5,6,7,8,9,10)
+fin_k = 2:10
+
+results = Dir_DF(k_values = 4:5, alpha_values = c(0.1,4,10),  n_sim = 10)
 
 ###############################################################################
 ### Plotting
@@ -586,14 +600,40 @@ Dir_Plot <- function(results_df,
     }
   }
 }
-Dir_Plot(results,"metric", exclude = "decision_tree")
+Dir_Plot(results,"k-alpha", exclude = "")
+
+###############################################################################
+### Save and Load
+#############################################################################
 
 #results = read.csv("Fin_ds.csv", header = TRUE, quote = "\"")
 
 #write.csv(results, file = "Fin_ds.csv", row.names = FALSE, sep = ";")
 
+###############################################################################
+### Hypertuning
+#############################################################################
 
-# pro# pro# problem to address: if I have less than 6 observations in the rare class
-# the SMOTE classic technique doesn't work
 
-# problem to address: the smote.dirichlet doesn't seem to generate the right points
+# 1) "Srotola" le colonne metriche, così da avere 1 riga per ogni simulazione
+results_long <- results %>%
+  unnest(cols = c(auc, precision, recall, f1))
+
+# 1. Selezioniamo solo la versione Dirichlet
+df_dirichlet <- results_long %>%
+  filter(version == "Dirichlet")
+
+# 2. Raggruppiamo per (k, alpha, model)
+df_dirichlet_summary <- df_dirichlet %>%
+  group_by(k, alpha, model, dataset) %>%
+  summarise(
+    mean_auc = mean(mean(auc), na.rm = TRUE),
+    mean_precision = mean(precision, na.rm = TRUE),
+    mean_recall = mean(recall, na.rm = TRUE),
+    mean_f1 = mean(f1, na.rm = TRUE),
+    .groups  = "drop"
+  ) %>%
+  arrange(desc(mean_auc))
+
+# Visualizziamo le combinazioni (k, alpha) con AUC media più alta
+head(df_dirichlet_summary, 10)
