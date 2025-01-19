@@ -511,7 +511,7 @@ plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 
 # Create the plot
-ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+auc_tree <- ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
   geom_boxplot() +
   facet_wrap(~ trainset, ncol = 4) +
   scale_fill_manual(
@@ -561,7 +561,7 @@ plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 
 # Create the plot
-ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+auc_knn <- ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
   geom_boxplot() +
   facet_wrap(~ trainset, ncol = 4) +
   scale_fill_manual(
@@ -608,7 +608,7 @@ for (l in 1:12) {
 plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 # Create the plot
-ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+auc_logistic<-ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
   geom_boxplot() +
   facet_wrap(~ trainset, ncol = 4) +
   scale_fill_manual(
@@ -655,7 +655,7 @@ plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 
 # Create the plot
-ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
+f1_tree <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
   geom_boxplot() +
   facet_wrap(~ trainset, ncol = 4) +
   scale_fill_manual(
@@ -702,7 +702,7 @@ for (l in 1:12) {
 plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 # Create the plot
-ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
+f1_logistic <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
   geom_boxplot() +
   facet_wrap(~ trainset, ncol = 4) +
   scale_fill_manual(
@@ -746,7 +746,7 @@ for (l in 1:12) {
 plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 # Create the plot
-ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
+f1_knn <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
   geom_boxplot() +
   facet_wrap(~ trainset, ncol = 4) +
   scale_fill_manual(
@@ -764,3 +764,7 @@ ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
     strip.text = element_text(size = 10, face = "bold"),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
+
+
+combined_metrics <- auc_tree + auc_logistic + auc_knn + f1_tree + f1_logistic + f1_knn + plot_layout(ncol = 3)
+plot(combined_metrics)
