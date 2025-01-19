@@ -20,8 +20,10 @@ library(class) # Ensure the class library is loaded for kNN
 
 # our new function, there have to be at least  
 # 2 points within the rare class
-SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0) 
+SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 2) 
 {
+  X = trainset[,1:2]
+  target=trainset$y
   ncD = ncol(X)
   n_target = table(target)
   classP = names(which.min(n_target))
@@ -90,8 +92,9 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
 # y = 0 most frequent class
 # y = 1 less frequent class
 y <- c(0, 1)
+pi <- c(0.01, 0.025, 0.05, 0.1)
 train_size <- c(600, 1000, 5000)
-pi <- c(0.1, 0.05, 0.025, 0.01)
+n_1_out <- 0
 
 # Parameters of distribution of the two features
 mu_0 <- c(0, 0)
@@ -100,9 +103,9 @@ cov_matrix_0 <- matrix(c(2,0,0,2), nrow = 2)
 mu_1 <- c(3,4)
 cov_matrix_1 <- matrix(c(2,0,0,2), nrow = 2)
 
-# mu_out <- c(-2,-2)
-# cov_matrix_out <- matrix(c(2,0,0,2), nrow = 2)
-# 
+mu_out <- c(-2,-2)
+cov_matrix_out <- matrix(c(2,0,0,2), nrow = 2)
+
 
 
 # Create a list of 12 lists to store results for each trainset
@@ -131,41 +134,57 @@ for (l in 1:12) {
 
 
 
-n_simulations = 1
+n_simulations = 100
 # 100 simulations !!!!!!!!!!!!!!!!!!!
 for (k in 1:n_simulations){
   trainsets <- list()
   testsets <- list()
   
   # Simulate data for all train datasets (and corresponding test sets)
+  # Helper function to ensure 'mu' and 'sigma' are valid
+  safe_mvrnorm <- function(n, mu, sigma) {
+    # Check if 'mu' is a valid vector of length 2
+    if (length(mu) != 2) stop("mu must be a 2-dimensional vector!")
+    
+    # Check if 'sigma' is a valid 2x2 matrix
+    if (ncol(sigma) != 2 || nrow(sigma) != 2) stop("sigma must be a 2x2 matrix!")
+    
+    if (n <= 0) return(data.frame(matrix(nrow = 0, ncol = length(mu))))
+    
+    MASS::mvrnorm(n, mu, sigma)
+  }
+
+ 
   for (prob in pi) {
     for (size in train_size) {
+      
       # Calculate number of samples per class
       n_0 <- round(size * (1 - prob))  # Class 0
-      n_1 <- round(size * prob)       # Class 1
-      n_1_out <- round(0.2 * n_1)
-      n_1_non_out <- round(0.8 * n_1)
+      n_1 <- round(size * prob)         # Class 1
+      
+      # Set the number of outliers based on prob and size
+      n_1_out <- switch(as.character(prob),
+                        "0.01" = 1,
+                        "0.025" = 2,
+                        "0.05" = 3,
+                        "0.1" = 4,
+                        stop("Invalid prob value"))
+      n_1_non_out <- n_1 - n_1_out
       
       # Generate data for class 0
-      x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
-      x_0 <- data.frame(x_0)
-      x_0$y <- rep(0, n_0)
+      x_0 <- if (n_0 > 0) {
+        data.frame(safe_mvrnorm(n_0, mu_0, cov_matrix_0), y = rep(0, n_0))
+      } else {
+        data.frame(matrix(nrow = 0, ncol = 3))  # Ensure 3 columns: X1, X2, y
+      }
       
       # Generate data for class 1
-      #x_1_non_out <- mvrnorm(n_1_non_out, mu_1, cov_matrix_1)
-      #x_1_out <- mvrnorm(n_1_out, mu_out, cov_matrix_out)
-      #x_1_non_out <- as.data.frame(x_1_non_out)
-      # if (length(x_1_out) == 1){
-      #   x_1_out <- as.data.frame(t(x_1_out))
-      #   rownames(x_1_out) <- NULL
-      # } else {
-      #   x_1_out <- as.data.frame(x_1_out)
-      # }
+      x_1_non_out <- force_matrix(safe_mvrnorm(n_1_non_out, mu_1, cov_matrix_1))
+      x_1_out <- force_matrix(safe_mvrnorm(n_1_out, mu_out, cov_matrix_out))
+      colnames(x_1_non_out) <- colnames(x_1_out) <- c('X1', 'X2')
       
-      #x_1 <- rbind(x_1_non_out, x_1_out)
-      #colnames(x_1) <- c('X1', 'X2')
-      x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
-      x_1 <- data.frame(x_1)
+      # Combine class 1 data
+      x_1 <- rbind(x_1_non_out, x_1_out)
       x_1$y <- rep(1, n_1)
       
       # Combine and shuffle
@@ -176,22 +195,41 @@ for (k in 1:n_simulations){
       trainsets[[dataset_name]] <- combined_data
     }
     
+    # TEST SET - similar approach to training set
+    n_0_test <- round(600 * (1 - prob))  # Class 0
+    n_1_test <- round(600 * prob)         # Class 1
+    n_1_test_out <- switch(as.character(prob),
+                           "0.01" = 1,
+                           "0.025" = 2,
+                           "0.05" = 3,
+                           "0.1" = 4,
+                           stop("Invalid prob value"))
+    n_1_test_non_out <- n_1_test - n_1_test_out
     
-    # With the same method and same parameter pi, compute test set
-    n_0 <- round(600 * (1 - prob))  
-    n_1 <- round(600 * prob)       
-    x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
-    x_0 <- data.frame(x_0)
-    x_0$y <- rep(0, n_0)
-    x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
-    x_1 <- data.frame(x_1)
-    x_1$y <- rep(1, n_1)
-    combined_data <- rbind(x_0, x_1)
+    # Generate data for class 0
+    x_0_test <- if (n_0_test > 0) {
+      data.frame(safe_mvrnorm(n_0_test, mu_0, cov_matrix_0), y = rep(0, n_0_test))
+    } else {
+      data.frame(matrix(nrow = 0, ncol = 3))  # Ensure 3 columns: X1, X2, y
+    }
+    
+    # Generate data for class 1
+    x_1_test_non_out <- force_matrix(safe_mvrnorm(n_1_test_non_out, mu_1, cov_matrix_1))
+    x_1_test_out <- force_matrix(safe_mvrnorm(n_1_test_out, mu_out, cov_matrix_out))
+    colnames(x_1_test_non_out) <- colnames(x_1_test_out) <- c('X1', 'X2')
+    
+    # Combine class 1 test data
+    x_1_test <- rbind(x_1_test_non_out, x_1_test_out)
+    x_1_test$y <- rep(1, n_1_test)
+    
+    # Combine and shuffle
+    combined_data_test <- rbind(x_0_test, x_1_test)
     
     # Save test dataset in the list
-    dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
-    testsets[[dataset_name]] <- combined_data
+    dataset_name_test <- paste0("test_", gsub("\\.", "", as.character(prob)))
+    testsets[[dataset_name_test]] <- combined_data_test
   }
+  
   
   ###############################################################################
   
@@ -214,7 +252,7 @@ for (k in 1:n_simulations){
     trainset$y <- as.factor(trainset$y) # for some reason it needs this???
     # balance dataset with SMOTE
     IR <- nrow(trainset[trainset$y == 1, ]) / nrow(trainset)
-    smote <- SMOTE(trainset[,-3], trainset[,3], K = 5, dup_size = 0)
+    smote <- SMOTE(trainset[,1:2], trainset$y, K = 5, dup_size = 0)
     data.smote <- smote$data
     syn.data.smote <- smote$syn_data
     p1 <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
