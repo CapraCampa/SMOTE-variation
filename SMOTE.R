@@ -98,13 +98,13 @@ n_1_out <- 0
 
 # Parameters of distribution of the two features
 mu_0 <- c(0, 0)
-cov_matrix_0 <- matrix(c(2,0,0,2), nrow = 2)
+cov_matrix_0 <- matrix(c(1,0,0,1), nrow = 2)
 
-mu_1 <- c(3,4)
-cov_matrix_1 <- matrix(c(2,0,0,2), nrow = 2)
+mu_1 <- c(1,1)
+cov_matrix_1 <- matrix(c(1,-0.5,-0.5,1), nrow = 2)
 
 mu_out <- c(-2,-2)
-cov_matrix_out <- matrix(c(2,0,0,2), nrow = 2)
+cov_matrix_out <- matrix(c(1,0,0,1), nrow = 2)
 
 
 
@@ -139,6 +139,14 @@ n_simulations = 100
 for (k in 1:n_simulations){
   trainsets <- list()
   testsets <- list()
+  
+  # Helper functions
+  force_matrix <- function(x) {
+    if (is.vector(x)) {
+      x <- t(x)  # Convert vector to single-row matrix
+    }
+    return(as.data.frame(x))
+  }
   
   # Simulate data for all train datasets (and corresponding test sets)
   # Helper function to ensure 'mu' and 'sigma' are valid
@@ -243,7 +251,7 @@ for (k in 1:n_simulations){
       scale_size_manual(values = c(1, 2)) +
       labs(title = "Train Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
-    #print(p)
+    print(p)
     
     
     
@@ -285,7 +293,7 @@ for (k in 1:n_simulations){
       labs(title = "SMOTE.DIRICHLET", x = "Feature 1", y = "Feature 2", color = "Class") +
       theme_minimal()
     
-    #print(p2)
+    print(p2)
     
     # Combine the two plots side-by-side
     combined_plot <- p1 + p2 + plot_layout(ncol = 2) # Arrange plots in a single row
