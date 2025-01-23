@@ -14,16 +14,12 @@ library(rattle)
 library(MCMCpack)
 library(ROCR)
 library(patchwork)
-library(kknn)
-library(class) # Ensure the class library is loaded for kNN
 
 
 # our new function, there have to be at least  
 # 2 points within the rare class
-SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 2) 
+SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0) 
 {
-  X = trainset[,1:2]
-  target=trainset$y
   ncD = ncol(X)
   n_target = table(target)
   classP = names(which.min(n_target))
@@ -52,8 +48,7 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 2)
     # each row is a vector of k weights that sum to 1
     g <- matrix(0, nrow = sum_dup, ncol = K)
     for(j in 1:sum_dup) {
-      # Why use 4?
-      g[j, ] <- MCMCpack::rdirichlet(1, rep(1, K))
+      g[j, ] <- MCMCpack::rdirichlet(1, rep(2, K))
     }
     
     # multiplies the sum_dup weights for the k neighbors
@@ -92,28 +87,27 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 2)
 # y = 0 most frequent class
 # y = 1 less frequent class
 y <- c(0, 1)
-pi <- c(0.01, 0.025, 0.05, 0.1)
 train_size <- c(600, 1000, 5000)
-n_1_out <- 0
+pi <- c(0.1, 0.05, 0.025)
 
 # Parameters of distribution of the two features
 mu_0 <- c(0, 0)
-cov_matrix_0 <- matrix(c(1,0,0,1), nrow = 2)
+cov_matrix_0 <- matrix(c(1, 0, 0, 1), nrow = 2)
 
-mu_1 <- c(1,1)
-cov_matrix_1 <- matrix(c(1,-0.5,-0.5,1), nrow = 2)
-
-mu_out <- c(-2,-2)
-cov_matrix_out <- matrix(c(1,0,0,1), nrow = 2)
+mu_1 <- c(1, 1)
+cov_matrix_1 <- matrix(c(1, -0.5, -0.5, 1), nrow = 2)
 
 
 
-# Create a list of 12 lists to store results for each trainset
-results <- vector("list", 12)  # One entry for each trainset
-names(results) <- paste0("Trainset_", 1:12)
+# Create a list of 9 lists to store results for each trainset
+results <- vector("list", 9)  # One entry for each trainset
+names(results) <- paste0("Trainset_", 1:9)
+
+### NUMBER OF SIMULATIONS
+n_simulations = 100
 
 # Loop through each trainset and initialize model results
-for (l in 1:12) {
+for (l in 1:9) {
   results[[l]] <- list(
     logistic_regressor = vector("list", 3),         # 3 versions for KNN
     decision_tree = vector("list", 3)        # 3 versions for decision tree
@@ -123,79 +117,38 @@ for (l in 1:12) {
   for (model_type in c("logistic_regressor", "decision_tree")) {
     for (version in 1:3) {
       results[[l]][[model_type]][[version]] <- list(
-        auc = numeric(100),        # AUC values
-        precision = numeric(100),   # Precision values
-        recall = numeric(100),      # Recall values
-        f1 = numeric(100)           # F1 values
+        auc = numeric(n_simulations),        # AUC values
+        precision = numeric(n_simulations),   # Precision values
+        recall = numeric(n_simulations),      # Recall values
+        f1 = numeric(n_simulations)           # F1 values
       )
     }
   }
 }
 
 
-
-n_simulations = 100
-# 100 simulations !!!!!!!!!!!!!!!!!!!
 for (k in 1:n_simulations){
   trainsets <- list()
   testsets <- list()
   
-  # Helper functions
-  force_matrix <- function(x) {
-    if (is.vector(x)) {
-      x <- t(x)  # Convert vector to single-row matrix
-    }
-    return(as.data.frame(x))
-  }
-  
   # Simulate data for all train datasets (and corresponding test sets)
-  # Helper function to ensure 'mu' and 'sigma' are valid
-  safe_mvrnorm <- function(n, mu, sigma) {
-    # Check if 'mu' is a valid vector of length 2
-    if (length(mu) != 2) stop("mu must be a 2-dimensional vector!")
-    
-    # Check if 'sigma' is a valid 2x2 matrix
-    if (ncol(sigma) != 2 || nrow(sigma) != 2) stop("sigma must be a 2x2 matrix!")
-    
-    if (n <= 0) return(data.frame(matrix(nrow = 0, ncol = length(mu))))
-    
-    MASS::mvrnorm(n, mu, sigma)
-  }
-  
-  
   for (prob in pi) {
     for (size in train_size) {
-      
       # Calculate number of samples per class
       n_0 <- round(size * (1 - prob))  # Class 0
-      n_1 <- round(size * prob)         # Class 1
-      
-      # Set the number of outliers based on prob and size
-      n_1_out <- switch(as.character(prob),
-                        "0.01" = 1,
-                        "0.025" = 2,
-                        "0.05" = 3,
-                        "0.1" = 4,
-                        stop("Invalid prob value"))
-      n_1_non_out <- n_1 - n_1_out
+      n_1 <- round(size * prob)       # Class 1
       
       # Generate data for class 0
-      x_0 <- if (n_0 > 0) {
-        data.frame(safe_mvrnorm(n_0, mu_0, cov_matrix_0), y = rep(0, n_0))
-      } else {
-        data.frame(matrix(nrow = 0, ncol = 3))  # Ensure 3 columns: X1, X2, y
-      }
+      x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+      x_0 <- data.frame(x_0)
+      x_0$y <- rep(0, n_0)
       
       # Generate data for class 1
-      x_1_non_out <- force_matrix(safe_mvrnorm(n_1_non_out, mu_1, cov_matrix_1))
-      x_1_out <- force_matrix(safe_mvrnorm(n_1_out, mu_out, cov_matrix_out))
-      colnames(x_1_non_out) <- colnames(x_1_out) <- c('X1', 'X2')
-      
-      # Combine class 1 data
-      x_1 <- rbind(x_1_non_out, x_1_out)
+      x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+      x_1 <- data.frame(x_1)
       x_1$y <- rep(1, n_1)
       
-      # Combine and shuffle
+      # Combine
       combined_data <- rbind(x_0, x_1)
       
       # Save train dataset in the list
@@ -203,45 +156,26 @@ for (k in 1:n_simulations){
       trainsets[[dataset_name]] <- combined_data
     }
     
-    # TEST SET - similar approach to training set
-    n_0_test <- round(600 * (1 - prob))  # Class 0
-    n_1_test <- round(600 * prob)         # Class 1
-    n_1_test_out <- switch(as.character(prob),
-                           "0.01" = 1,
-                           "0.025" = 2,
-                           "0.05" = 3,
-                           "0.1" = 4,
-                           stop("Invalid prob value"))
-    n_1_test_non_out <- n_1_test - n_1_test_out
     
-    # Generate data for class 0
-    x_0_test <- if (n_0_test > 0) {
-      data.frame(safe_mvrnorm(n_0_test, mu_0, cov_matrix_0), y = rep(0, n_0_test))
-    } else {
-      data.frame(matrix(nrow = 0, ncol = 3))  # Ensure 3 columns: X1, X2, y
-    }
-    
-    # Generate data for class 1
-    x_1_test_non_out <- force_matrix(safe_mvrnorm(n_1_test_non_out, mu_1, cov_matrix_1))
-    x_1_test_out <- force_matrix(safe_mvrnorm(n_1_test_out, mu_out, cov_matrix_out))
-    colnames(x_1_test_non_out) <- colnames(x_1_test_out) <- c('X1', 'X2')
-    
-    # Combine class 1 test data
-    x_1_test <- rbind(x_1_test_non_out, x_1_test_out)
-    x_1_test$y <- rep(1, n_1_test)
-    
-    # Combine and shuffle
-    combined_data_test <- rbind(x_0_test, x_1_test)
+    # With the same method and same parameter pi, compute test set
+    n_0 <- round(600 * (1 - prob))  
+    n_1 <- round(600 * prob)       
+    x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+    x_0 <- data.frame(x_0)
+    x_0$y <- rep(0, n_0)
+    x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+    x_1 <- data.frame(x_1)
+    x_1$y <- rep(1, n_1)
+    combined_data <- rbind(x_0, x_1)
     
     # Save test dataset in the list
-    dataset_name_test <- paste0("test_", gsub("\\.", "", as.character(prob)))
-    testsets[[dataset_name_test]] <- combined_data_test
+    dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
+    testsets[[dataset_name]] <- combined_data
   }
-  
   
   ###############################################################################
   
-  for (i in 1:12){
+  for (i in 1:9){
     trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
     
@@ -260,7 +194,7 @@ for (k in 1:n_simulations){
     trainset$y <- as.factor(trainset$y) # for some reason it needs this???
     # balance dataset with SMOTE
     IR <- nrow(trainset[trainset$y == 1, ]) / nrow(trainset)
-    smote <- SMOTE(trainset[,1:2], trainset$y, K = 5, dup_size = 0)
+    smote <- SMOTE(trainset[,-3], trainset[,3], K = 5, dup_size = 0)
     data.smote <- smote$data
     syn.data.smote <- smote$syn_data
     p1 <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
@@ -273,7 +207,7 @@ for (k in 1:n_simulations){
     
     #print(p1)
     
-    data.smote$class <- factor(data.smote$class) #?????
+    data.smote$class <- factor(data.smote$class) 
     smote_IR <- nrow(data.smote[data.smote$class == 1, ]) / nrow(data.smote)
     
     # balance dataset with SMOTE variant
@@ -296,16 +230,18 @@ for (k in 1:n_simulations){
     #print(p2)
     
     # Combine the two plots side-by-side
-    combined_plot <- p1 + p2 + plot_layout(ncol = 2) # Arrange plots in a single row
+    combined_plot <- p1 + p2 + 
+      plot_layout(ncol = 2) # Arrange plots in a single row
     
     #print(combined_plot)
     
-    data.smote.dirichlet$class <- factor(data.smote.dirichlet$class) #?????
+    data.smote.dirichlet$class <- factor(data.smote.dirichlet$class)
     dirichlet_IR <- nrow(data.smote.dirichlet[data.smote.dirichlet$class == 1, ]) / nrow(data.smote.dirichlet)
     
     
-    ###############################################################################
-    #apply models (tree, logistic regression and KNN) to all train sets
+    
+    # apply models (tree and logistic regression) to all train sets -----------
+    
     
     # Classification trees
     
@@ -325,15 +261,11 @@ for (k in 1:n_simulations){
     test_index <- ceiling((i/3))
     testset <- testsets[[test_index]]
     
-    
-    # Model prediction --------------------------------------------------------
-    
-    ### Decision Tree
+    # predict all models
     pred.tree <- predict(tree, newdata = testset,type = "prob")
     pred.tree.smote <- predict(tree.smote, newdata = testset,type = "prob")
     pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = testset)
     
-    ### Logistic Regression
     prob_class_1 <- predict(fit, newdata = testset, type= "response")      
     prob_class_0 <- 1 - prob_class_1   
     pred.fit <- cbind(prob_class_0, prob_class_1)
@@ -346,7 +278,9 @@ for (k in 1:n_simulations){
     prob_class_0 <- 1 - prob_class_1   
     pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
     
-    # Metrics -----------------------------------------------------------------
+    
+    # compute metrics to compare our variant to the original technique --------
+    
     
     # Logistic regression
     metrics.fit <- accuracy.meas(response = testset$y, predicted = pred.fit[,2])
@@ -359,13 +293,13 @@ for (k in 1:n_simulations){
     
     
     results[[i]][["logistic_regressor"]][[1]]$auc[k] <- auc.fit
-    if (is.nan(metrics.fit$precision)){
+    if (is.nan(metrics.fit$precision)| is.na(metrics.fit$precision)){
       results[[i]][["logistic_regressor"]][[1]]$precision[k] <- 0
     }else{
       results[[i]][["logistic_regressor"]][[1]]$precision[k] <- metrics.fit$precision
     }
     results[[i]][["logistic_regressor"]][[1]]$recall[k] <- metrics.fit$recall
-    if (is.nan(metrics.fit$F)){
+    if (is.nan(metrics.fit$F)| is.na(metrics.fit$F)){
       results[[i]][["logistic_regressor"]][[1]]$f1[k] <- 0
     }else{
       results[[i]][["logistic_regressor"]][[1]]$f1[k] <- metrics.fit$F
@@ -375,13 +309,21 @@ for (k in 1:n_simulations){
     results[[i]][["logistic_regressor"]][[2]]$auc[k] <- auc.fit.smote
     results[[i]][["logistic_regressor"]][[2]]$precision[k] <- metrics.fit.smote$precision
     results[[i]][["logistic_regressor"]][[2]]$recall[k] <- metrics.fit.smote$recall
-    results[[i]][["logistic_regressor"]][[2]]$f1[k] <- metrics.fit.smote$F
+    if (is.nan(metrics.fit.smote$F)| is.na(metrics.fit.smote$F)){
+      results[[i]][["logistic_regressor"]][[2]]$f1[k] <- 0
+    }else{
+      results[[i]][["logistic_regressor"]][[2]]$f1[k] <- metrics.fit.smote$F
+    }
     
     
     results[[i]][["logistic_regressor"]][[3]]$auc[k] <- auc.fit.smote.dirichlet
     results[[i]][["logistic_regressor"]][[3]]$precision[k] <- metrics.fit.smote.dirichlet$precision
     results[[i]][["logistic_regressor"]][[3]]$recall[k] <- metrics.fit.smote.dirichlet$recall
-    results[[i]][["logistic_regressor"]][[3]]$f1[k] <- metrics.fit.smote.dirichlet$F
+    if (is.nan(metrics.fit.smote.dirichlet$F)| is.na(metrics.fit.smote.dirichlet$F)){
+      results[[i]][["logistic_regressor"]][[3]]$f1[k] <- 0
+    }else{
+      results[[i]][["logistic_regressor"]][[3]]$f1[k] <- metrics.fit.smote.dirichlet$F
+    }
     
     
     
@@ -396,13 +338,13 @@ for (k in 1:n_simulations){
     
     
     results[[i]][["decision_tree"]][[1]]$auc[k] <- auc.tree
-    if (is.nan(metrics.tree$precision)){
+    if (is.nan(metrics.tree$precision) | is.na(metrics.tree$precision)){
       results[[i]][["decision_tree"]][[1]]$precision[k] <- 0
     }else{
       results[[i]][["decision_tree"]][[1]]$precision[k] <- metrics.tree$precision
     }
     results[[i]][["decision_tree"]][[1]]$recall[k] <- metrics.tree$recall
-    if (is.nan(metrics.tree$precision)){
+    if (is.nan(metrics.tree$F)| is.na(metrics.tree$F)){
       results[[i]][["decision_tree"]][[1]]$f1[k] <- 0
     }else{
       results[[i]][["decision_tree"]][[1]]$f1[k] <- metrics.tree$F
@@ -411,17 +353,27 @@ for (k in 1:n_simulations){
     results[[i]][["decision_tree"]][[2]]$auc[k] <- auc.tree.smote
     results[[i]][["decision_tree"]][[2]]$precision[k] <- metrics.tree.smote$precision
     results[[i]][["decision_tree"]][[2]]$recall[k] <- metrics.tree.smote$recall
-    results[[i]][["decision_tree"]][[2]]$f1[k] <- metrics.tree.smote$F
+    if (is.nan(metrics.tree.smote$F)| is.na(metrics.tree.smote$F)){
+      results[[i]][["decision_tree"]][[2]]$f1[k] <- 0
+    }else{
+      results[[i]][["decision_tree"]][[2]]$f1[k] <- metrics.tree.smote$F
+    }
     
     
     results[[i]][["decision_tree"]][[3]]$auc[k] <- auc.tree.smote.dirichlet
     results[[i]][["decision_tree"]][[3]]$precision[k] <- metrics.tree.smote.dirichlet$precision
     results[[i]][["decision_tree"]][[3]]$recall[k] <- metrics.tree.smote.dirichlet$recall
-    results[[i]][["decision_tree"]][[3]]$f1[k] <- metrics.tree.smote.dirichlet$F
+    if (is.nan(metrics.tree.smote.dirichlet$F)| is.na(metrics.tree.smote.dirichlet$F)){
+      results[[i]][["decision_tree"]][[3]]$f1[k] <- 0
+    }else{
+      results[[i]][["decision_tree"]][[3]]$f1[k] <- metrics.tree.smote.dirichlet$F
+    }
     
   }
   
 }
+
+
 # Boxplot of AUC under Decision Tree --------------------------------------
 
 # Specify the desired order of levels for trainset
@@ -438,9 +390,8 @@ plot_data <- data.frame(
   auc = numeric()
 )
 
-for (l in 1:12) {
+for (l in 1:9) {
   for (version in 1:3) {
-    # Extract AUC values from the decision tree for the current version
     auc_values <- results[[l]]$decision_tree[[version]]$auc
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
@@ -456,12 +407,12 @@ plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 
 # Create the plot
-auc_tree <- ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+auc_dt <- ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
   geom_boxplot() +
-  facet_wrap(~ trainset, ncol = 4) +
+  facet_wrap(~ trainset, ncol = 3) +
   scale_fill_manual(
-    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
-    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+    values = c("#1b9e77", "#d95f02", "#7570b3"), 
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  
   ) +
   labs(
     title = "Boxplots of AUC values for Decision Tree Model by Version",
@@ -477,7 +428,6 @@ auc_tree <- ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(ve
 
 
 
-
 # Boxplot of AUC under Logistic Regression --------------------------------
 
 # Prepare data for plotting
@@ -487,9 +437,8 @@ plot_data <- data.frame(
   auc = numeric()
 )
 
-for (l in 1:12) {
+for (l in 1:9) {
   for (version in 1:3) {
-    # Extract AUC values from the decision tree for the current version
     auc_values <- results[[l]]$logistic_regressor[[version]]$auc
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
@@ -504,18 +453,18 @@ for (l in 1:12) {
 plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 # Create the plot
-auc_logistic<-ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
+auc_logistic <- ggplot(plot_data, aes(x = factor(version), y = auc, fill = factor(version))) +
   geom_boxplot() +
-  facet_wrap(~ trainset, ncol = 4) +
+  facet_wrap(~ trainset, ncol = 3) +
   scale_fill_manual(
-    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
-    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE") 
   ) +
   labs(
     title = "Boxplots of AUC values for Logistic Regression Model by Version",
     x = "Version",
     y = "AUC",
-    fill = "Model Version"  # Legend title
+    fill = "Model Version"
   ) +
   theme_minimal() +
   theme(
@@ -533,9 +482,8 @@ plot_data <- data.frame(
   f1 = numeric()
 )
 
-for (l in 1:12) {
+for (l in 1:9) {
   for (version in 1:3) {
-    # Extract AUC values from the decision tree for the current version
     f1_values <- results[[l]]$decision_tree[[version]]$f1
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
@@ -551,18 +499,18 @@ plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 
 
 # Create the plot
-f1_tree <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
+f1_dt <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
   geom_boxplot() +
-  facet_wrap(~ trainset, ncol = 4) +
+  facet_wrap(~ trainset, ncol = 3) +
   scale_fill_manual(
-    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
-    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+    values = c("#1b9e77", "#d95f02", "#7570b3"), 
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  
   ) +
   labs(
     title = "Boxplots of F1 values for Decision Tree Model by Version",
     x = "Version",
     y = "F1",
-    fill = "Model Version"  # Legend title
+    fill = "Model Version"  
   ) +
   theme_minimal() +
   theme(
@@ -581,9 +529,8 @@ plot_data <- data.frame(
   f1 = numeric()
 )
 
-for (l in 1:12) {
+for (l in 1:9) {
   for (version in 1:3) {
-    # Extract AUC values from the decision tree for the current version
     f1_values <- results[[l]]$logistic_regressor[[version]]$f1
     temp_df <- data.frame(
       trainset =  names(trainsets)[l],
@@ -600,16 +547,16 @@ plot_data$trainset <- factor(plot_data$trainset, levels = levels)
 # Create the plot
 f1_logistic <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(version))) +
   geom_boxplot() +
-  facet_wrap(~ trainset, ncol = 4) +
+  facet_wrap(~ trainset, ncol = 3) +
   scale_fill_manual(
-    values = c("#1b9e77", "#d95f02", "#7570b3"),  # Custom colors (optional)
-    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  # Custom labels
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE") 
   ) +
   labs(
     title = "Boxplots of F1 values for Logistic Regression Model by Version",
     x = "Version",
     y = "F1",
-    fill = "Model Version"  # Legend title
+    fill = "Model Version" 
   ) +
   theme_minimal() +
   theme(
@@ -620,5 +567,8 @@ f1_logistic <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(
 
 
 
-combined_metrics <- auc_tree + auc_logistic + f1_tree + f1_logistic  + plot_layout(ncol = 2)
+
+# plotting metrics----------------------------------------------------------------
+
+combined_metrics <- auc_dt + auc_logistic + f1_dt + f1_logistic + plot_layout(ncol = 2)
 plot(combined_metrics)
