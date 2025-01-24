@@ -90,6 +90,8 @@ y <- c(0, 1)
 train_size <- c(600, 1000, 5000)
 pi <- c(0.1, 0.05, 0.025)
 
+k_values <- c(3,5)
+
 # Parameters of distribution of the two features
 mu_0 <- c(0, 0)
 cov_matrix_0 <- matrix(c(1, 0, 0, 1), nrow = 2)
@@ -106,6 +108,8 @@ names(results) <- paste0("Trainset_", 1:9)
 ### NUMBER OF SIMULATIONS
 n_simulations = 100
 
+for (K in k_values){
+  
 # Loop through each trainset and initialize model results
 for (l in 1:9) {
   results[[l]] <- list(
@@ -117,15 +121,15 @@ for (l in 1:9) {
   for (model_type in c("logistic_regressor", "decision_tree")) {
     for (version in 1:3) {
       results[[l]][[model_type]][[version]] <- list(
-        auc = numeric(n_simulations),        # AUC values
-        precision = numeric(n_simulations),   # Precision values
-        recall = numeric(n_simulations),      # Recall values
-        f1 = numeric(n_simulations)           # F1 values
+        auc = numeric(n_simulations),          # AUC values
+        precision = numeric(n_simulations),    # Precision values
+        recall = numeric(n_simulations),       # Recall values
+        f1 = numeric(n_simulations),           # F1 values
+        balanced_acc = numeric(n_simulations)  # Balanced Acc values
       )
     }
   }
 }
-
 
 for (k in 1:n_simulations){
   trainsets <- list()
@@ -154,28 +158,45 @@ for (k in 1:n_simulations){
       # Save train dataset in the list
       dataset_name <- paste0("train_", size, "_", gsub("\\.", "", as.character(prob)))
       trainsets[[dataset_name]] <- combined_data
+      
+      
+      # With the same method and same parameter pi, compute test set
+      n_0 <- round((100*size/75) * 0.25   * (1 - prob))  
+      n_1 <- round((100*size/75) * 0.25 * prob)       
+      x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+      x_0 <- data.frame(x_0)
+      x_0$y <- rep(0, n_0)
+      x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+      x_1 <- data.frame(x_1)
+      x_1$y <- rep(1, n_1)
+      combined_data <- rbind(x_0, x_1)
+      
+      # Save test dataset in the list
+      dataset_name <- paste0("test_", size, "_", gsub("\\.", "", as.character(prob)))
+      testsets[[dataset_name]] <- combined_data
+      
     }
     
     
     # With the same method and same parameter pi, compute test set
-    n_0 <- round(600 * (1 - prob))  
-    n_1 <- round(600 * prob)       
-    x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
-    x_0 <- data.frame(x_0)
-    x_0$y <- rep(0, n_0)
-    x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
-    x_1 <- data.frame(x_1)
-    x_1$y <- rep(1, n_1)
-    combined_data <- rbind(x_0, x_1)
+    #n_0 <- round(1000 * (1 - prob))  
+    #n_1 <- round(1000 * prob)       
+    #x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+    #x_0 <- data.frame(x_0)
+    #x_0$y <- rep(0, n_0)
+    #x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+    #x_1 <- data.frame(x_1)
+    #x_1$y <- rep(1, n_1)
+    #combined_data <- rbind(x_0, x_1)
     
     # Save test dataset in the list
-    dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
-    testsets[[dataset_name]] <- combined_data
+    #dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
+    #testsets[[dataset_name]] <- combined_data
   }
   
   ###############################################################################
   
-  for (i in 1:9){
+  for (i in 1:length(testsets)){
     trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
     
@@ -194,7 +215,7 @@ for (k in 1:n_simulations){
     trainset$y <- as.factor(trainset$y) # for some reason it needs this???
     # balance dataset with SMOTE
     IR <- nrow(trainset[trainset$y == 1, ]) / nrow(trainset)
-    smote <- SMOTE(trainset[,-3], trainset[,3], K = 5, dup_size = 0)
+    smote <- SMOTE(trainset[,-3], trainset[,3], K = K, dup_size = 0)
     data.smote <- smote$data
     syn.data.smote <- smote$syn_data
     p1 <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
@@ -212,7 +233,7 @@ for (k in 1:n_simulations){
     
     # balance dataset with SMOTE variant
     
-    smote.dirichlet <- SMOTE.DIRICHLET(trainset[,1:2], trainset$y, K = 5, dup_size = 0)
+    smote.dirichlet <- SMOTE.DIRICHLET(trainset[,1:2], trainset$y, K = K, dup_size = 0)
     data.smote.dirichlet <- smote.dirichlet$data
     syn.data.smote.dirichlet <- smote.dirichlet$syn_data
     x <- data.smote.dirichlet[,1:2]
@@ -258,13 +279,29 @@ for (k in 1:n_simulations){
     fit.smote <- glm(class ~ . , data = data.smote, family = binomial(link = "logit"))
     fit.smote.dirichlet <- glm(class ~ . , data = data.smote.dirichlet, family = binomial(link = "logit"))
     
-    test_index <- ceiling((i/3))
+    test_index <- i
     testset <- testsets[[test_index]]
+    testset$y <- factor(testset$y, levels = c(0, 1))
+    
+    p_test <- ggplot(testset, aes(x = X1, y = X2, color = factor(y))) + 
+      geom_point(aes(size = factor(y)), alpha = 0.8, show.legend = c(color = TRUE, size = FALSE)) + 
+      scale_color_manual(values = c("grey", "blue")) + 
+      scale_size_manual(values = c(1, 2)) +
+      labs(title = "SMOTE", x = "Feature 1", y = "Feature 2", color = "Class") +
+      theme_minimal()
+    
+    #print(p_test)
     
     # predict all models
     pred.tree <- predict(tree, newdata = testset,type = "prob")
     pred.tree.smote <- predict(tree.smote, newdata = testset,type = "prob")
     pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = testset)
+    
+    ###############
+    pred.tree.class <- predict(tree, newdata = testset,type = "class")
+    pred.tree.smote.class <- predict(tree.smote, newdata = testset,type = "class")
+    pred.tree.smote.dirichlet.class <- predict(tree.smote.dirichlet, newdata = testset, type="class")
+    #################
     
     prob_class_1 <- predict(fit, newdata = testset, type= "response")      
     prob_class_0 <- 1 - prob_class_1   
@@ -278,6 +315,15 @@ for (k in 1:n_simulations){
     prob_class_0 <- 1 - prob_class_1   
     pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
     
+    ################
+    pred.fit.class <- ifelse(pred.fit[,2] > 0.5, 1, 0)
+    pred.fit.smote.class <- ifelse(pred.fit.smote[,2] > 0.5, 1, 0)
+    pred.fit.smote.dirichlet.class <- ifelse(pred.fit.smote.dirichlet[,2] > 0.5, 1, 0)
+    
+    pred.fit.class <- factor(pred.fit.class, levels = c(0,1))
+    pred.fit.smote.class <- factor(pred.fit.smote.class, levels = c(0,1))
+    pred.fit.smote.dirichlet.class <- factor(pred.fit.smote.dirichlet.class,levels = c(0,1))
+    #############
     
     # compute metrics to compare our variant to the original technique --------
     
@@ -290,6 +336,17 @@ for (k in 1:n_simulations){
     auc.fit <- roc.curve(testset$y, pred.fit[,2], plotit=FALSE, main = paste("ROC Curve - Dataset:", trainset_name, "\nLog regression"))$auc
     auc.fit.smote <- roc.curve(testset$y, pred.fit.smote[,2], plotit=FALSE,add.roc = TRUE, col = 2)$auc
     auc.fit.smote.dirichlet <- roc.curve(testset$y, pred.fit.smote.dirichlet[,2], add.roc = TRUE,plotit=FALSE, col = 3)$auc
+    
+    ##############
+    cm <- confusionMatrix(pred.fit.class, testset$y, positive = "1")
+    acc.fit <- cm$byClass["Balanced Accuracy"]
+    
+    cm <- confusionMatrix(pred.fit.smote.class, testset$y, positive = "1")
+    acc.fit.smote <- cm$byClass["Balanced Accuracy"]
+    
+    cm <- confusionMatrix(pred.fit.smote.dirichlet.class, testset$y, positive = "1")
+    acc.fit.smote.dirichlet <- cm$byClass["Balanced Accuracy"]
+    #############
     
     
     results[[i]][["logistic_regressor"]][[1]]$auc[k] <- auc.fit
@@ -305,6 +362,9 @@ for (k in 1:n_simulations){
       results[[i]][["logistic_regressor"]][[1]]$f1[k] <- metrics.fit$F
     }
     
+    ####
+    results[[i]][["logistic_regressor"]][[1]]$balanced_acc[k] <- acc.fit
+    ####
     
     results[[i]][["logistic_regressor"]][[2]]$auc[k] <- auc.fit.smote
     results[[i]][["logistic_regressor"]][[2]]$precision[k] <- metrics.fit.smote$precision
@@ -314,6 +374,10 @@ for (k in 1:n_simulations){
     }else{
       results[[i]][["logistic_regressor"]][[2]]$f1[k] <- metrics.fit.smote$F
     }
+    
+    ####
+    results[[i]][["logistic_regressor"]][[2]]$balanced_acc[k] <- acc.fit.smote
+    ####
     
     
     results[[i]][["logistic_regressor"]][[3]]$auc[k] <- auc.fit.smote.dirichlet
@@ -325,6 +389,9 @@ for (k in 1:n_simulations){
       results[[i]][["logistic_regressor"]][[3]]$f1[k] <- metrics.fit.smote.dirichlet$F
     }
     
+    ####
+    results[[i]][["logistic_regressor"]][[3]]$balanced_acc[k] <- acc.fit.smote.dirichlet
+    ####
     
     
     # Classification trees
@@ -336,6 +403,16 @@ for (k in 1:n_simulations){
     auc.tree.smote <- roc.curve(testset$y, pred.tree.smote[,2],add.roc = TRUE, plotit=FALSE, col = 2)$auc
     auc.tree.smote.dirichlet <- roc.curve(testset$y, pred.tree.smote.dirichlet[,2], add.roc = TRUE, plotit=FALSE, col = 3)$auc
     
+    ########
+    cm <- confusionMatrix(pred.tree.class, testset$y, positive = "1")
+    acc.tree <- cm$byClass["Balanced Accuracy"]
+    
+    cm <- confusionMatrix(pred.tree.smote.class, testset$y, positive = "1")
+    acc.tree.smote <- cm$byClass["Balanced Accuracy"]
+    
+    cm <- confusionMatrix(pred.tree.smote.dirichlet.class, testset$y, positive = "1")
+    acc.tree.smote.dirichlet <- cm$byClass["Balanced Accuracy"]
+    ########
     
     results[[i]][["decision_tree"]][[1]]$auc[k] <- auc.tree
     if (is.nan(metrics.tree$precision) | is.na(metrics.tree$precision)){
@@ -350,6 +427,10 @@ for (k in 1:n_simulations){
       results[[i]][["decision_tree"]][[1]]$f1[k] <- metrics.tree$F
     }
     
+    ####
+    results[[i]][["decision_tree"]][[1]]$balanced_acc[k] <- acc.tree
+    ####
+    
     results[[i]][["decision_tree"]][[2]]$auc[k] <- auc.tree.smote
     results[[i]][["decision_tree"]][[2]]$precision[k] <- metrics.tree.smote$precision
     results[[i]][["decision_tree"]][[2]]$recall[k] <- metrics.tree.smote$recall
@@ -358,6 +439,10 @@ for (k in 1:n_simulations){
     }else{
       results[[i]][["decision_tree"]][[2]]$f1[k] <- metrics.tree.smote$F
     }
+    
+    ####
+    results[[i]][["decision_tree"]][[2]]$balanced_acc[k] <- acc.tree.smote
+    ####
     
     
     results[[i]][["decision_tree"]][[3]]$auc[k] <- auc.tree.smote.dirichlet
@@ -369,6 +454,9 @@ for (k in 1:n_simulations){
       results[[i]][["decision_tree"]][[3]]$f1[k] <- metrics.tree.smote.dirichlet$F
     }
     
+    ####
+    results[[i]][["decision_tree"]][[3]]$balanced_acc[k] <- acc.tree.smote.dirichlet 
+    ####
   }
   
 }
@@ -565,10 +653,102 @@ f1_logistic <- ggplot(plot_data, aes(x = factor(version), y = f1, fill = factor(
   )
 
 
+#--------------------------------------------------------------------------------
+
+
+plot_data <- data.frame(
+  trainset = integer(),
+  version = integer(),
+  acc = numeric()
+)
+
+for (l in 1:9) {
+  for (version in 1:3) {
+    acc_values <- results[[l]]$decision_tree[[version]]$balanced_acc
+    temp_df <- data.frame(
+      trainset =  names(trainsets)[l],
+      version = version,
+      acc = acc_values
+    )
+    plot_data <- rbind(plot_data, temp_df)
+  }
+}
+
+# Convert trainset to a factor with the specified levels
+plot_data$trainset <- factor(plot_data$trainset, levels = levels)
+
+
+# Create the plot
+acc_dt <- ggplot(plot_data, aes(x = factor(version), y = acc, fill = factor(version))) +
+  geom_boxplot() +
+  facet_wrap(~ trainset, ncol = 3) +
+  scale_fill_manual(
+    values = c("#1b9e77", "#d95f02", "#7570b3"), 
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE")  
+  ) +
+  labs(
+    title = "Boxplots of balanced accuracy values for Decision Tree Model by Version",
+    x = "Version",
+    y = "Balanced Acc",
+    fill = "Model Version"  
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+
+
+
+
+plot_data <- data.frame(
+  trainset = integer(),
+  version = integer(),
+  acc = numeric()
+)
+
+for (l in 1:9) {
+  for (version in 1:3) {
+    acc_values <- results[[l]]$logistic_regressor[[version]]$balanced_acc
+    temp_df <- data.frame(
+      trainset =  names(trainsets)[l],
+      version = version,
+      acc = acc_values
+    )
+    plot_data <- rbind(plot_data, temp_df)
+  }
+}
+
+# Convert trainset to a factor with the specified levels
+plot_data$trainset <- factor(plot_data$trainset, levels = levels)
+
+# Create the plot
+acc_logistic <- ggplot(plot_data, aes(x = factor(version), y = acc, fill = factor(version))) +
+  geom_boxplot() +
+  facet_wrap(~ trainset, ncol = 3) +
+  scale_fill_manual(
+    values = c("#1b9e77", "#d95f02", "#7570b3"),  
+    labels = c("Unbalanced data", "SMOTE", "Dirichlet SMOTE") 
+  ) +
+  labs(
+    title = "Boxplots of balanced accuracy values for Logistic Regression Model by Version",
+    x = "Version",
+    y = "acc",
+    fill = "Model Version" 
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
 
 
 
 # plotting metrics----------------------------------------------------------------
 
-combined_metrics <- auc_dt + auc_logistic + f1_dt + f1_logistic + plot_layout(ncol = 2)
-plot(combined_metrics)
+combined_metrics <- acc_dt + acc_logistic + f1_dt + f1_logistic + plot_layout(ncol = 2)
+print(combined_metrics)
+}
