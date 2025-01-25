@@ -160,43 +160,46 @@ for (k in 1:n_simulations){
       trainsets[[dataset_name]] <- combined_data
       
       
-      # With the same method and same parameter pi, compute test set
-      n_0 <- round((100*size/75) * 0.25   * (1 - prob))  
-      n_1 <- round((100*size/75) * 0.25 * prob)       
-      x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
-      x_0 <- data.frame(x_0)
-      x_0$y <- rep(0, n_0)
-      x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
-      x_1 <- data.frame(x_1)
-      x_1$y <- rep(1, n_1)
-      combined_data <- rbind(x_0, x_1)
+      # # With the same method and same parameter pi, compute test set
+      # n_0 <- round((100*size/75) * 0.25   * (1 - prob))  
+      # n_1 <- round((100*size/75) * 0.25 * prob)       
+      # x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+      # x_0 <- data.frame(x_0)
+      # x_0$y <- rep(0, n_0)
+      # x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+      # x_1 <- data.frame(x_1)
+      # x_1$y <- rep(1, n_1)
+      # combined_data <- rbind(x_0, x_1)
+      # 
+      # # Save test dataset in the list
+      # dataset_name <- paste0("test_", size, "_", gsub("\\.", "", as.character(prob)))
+      # testsets[[dataset_name]] <- combined_data
       
-      # Save test dataset in the list
-      dataset_name <- paste0("test_", size, "_", gsub("\\.", "", as.character(prob)))
-      testsets[[dataset_name]] <- combined_data
+      
+      
       
     }
     
-    
     # With the same method and same parameter pi, compute test set
-    #n_0 <- round(1000 * (1 - prob))  
-    #n_1 <- round(1000 * prob)       
-    #x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
-    #x_0 <- data.frame(x_0)
-    #x_0$y <- rep(0, n_0)
-    #x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
-    #x_1 <- data.frame(x_1)
-    #x_1$y <- rep(1, n_1)
-    #combined_data <- rbind(x_0, x_1)
+    n_0 <- round(600 * (1 - prob))
+    n_1 <- round(600 * prob)
+    x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+    x_0 <- data.frame(x_0)
+    x_0$y <- rep(0, n_0)
+    x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+    x_1 <- data.frame(x_1)
+    x_1$y <- rep(1, n_1)
+    combined_data <- rbind(x_0, x_1)
     
     # Save test dataset in the list
-    #dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
-    #testsets[[dataset_name]] <- combined_data
+    dataset_name <- paste0("test_", gsub("\\.", "", as.character(prob)))
+    testsets[[dataset_name]] <- combined_data
+    
   }
   
   ###############################################################################
   
-  for (i in 1:length(testsets)){
+  for (i in 1:length(trainsets)){
     trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
     
@@ -279,7 +282,7 @@ for (k in 1:n_simulations){
     fit.smote <- glm(class ~ . , data = data.smote, family = binomial(link = "logit"))
     fit.smote.dirichlet <- glm(class ~ . , data = data.smote.dirichlet, family = binomial(link = "logit"))
     
-    test_index <- i
+    test_index <- ceiling(i/3)
     testset <- testsets[[test_index]]
     testset$y <- factor(testset$y, levels = c(0, 1))
     

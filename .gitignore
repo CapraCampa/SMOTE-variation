@@ -1,0 +1,11 @@
+
+*.log
+*.aux
+*.out
+*.toc
+*.nav
+*.snm
+*.gz
+
+.Rhistory
+.Rapp.history
