@@ -106,7 +106,7 @@ results <- vector("list", 9)  # One entry for each trainset
 names(results) <- paste0("Trainset_", 1:9)
 
 ### NUMBER OF SIMULATIONS
-n_simulations = 1
+n_simulations = 100
 
 for (K in k_values){
   
@@ -237,7 +237,7 @@ for (k in 1:n_simulations){
       ) +
       scale_color_manual(
         values = c("grey", "darkgreen", "blue"),  # Include the color for the second geom_point
-        labels = c("0", "SMOTE", "Trainset (Class 1)")  # Add label for the second geom_point
+        labels = c("0", "SMOTE", "1")  # Add label for the second geom_point
       ) +
       labs(
         title = "SMOTE", 
@@ -295,7 +295,7 @@ for (k in 1:n_simulations){
     combined_plot <- p1 + p2 + 
       plot_layout(ncol = 2) # Arrange plots in a single row
     
-    #print(combined_plot)
+    print(combined_plot)
     
     data.smote.dirichlet$class <- factor(data.smote.dirichlet$class)
     dirichlet_IR <- nrow(data.smote.dirichlet[data.smote.dirichlet$class == 1, ]) / nrow(data.smote.dirichlet)
