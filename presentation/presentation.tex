@@ -1,11 +1,11 @@
 \documentclass{beamer}
 
 % THEME SETTINGS
-\usetheme{CambridgeUS}
+\usetheme{Singapore}
 \usecolortheme{dolphin}
 
 % Bibliography
-\usepackage[backend=biber, style=authoryear]{biblatex}
+\usepackage[backend=biber, style=authoryear, citestyle=numeric]{biblatex}
 \addbibresource{bibliography/bibliography.bib} % Point to your .bib file
 \setbeamertemplate{frametitle continuation}{}
 
@@ -34,7 +34,90 @@
   \end{itemize}
 \end{frame}
 
-% REFERENCES SLIDE
+%%%%%%%%%%%%%%%% Valeria %%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%% Christian %%%%%%%%%%%%%%%%%%%%%
+
+\section{Data Generation}
+
+\begin{frame}
+  \frametitle{Data Generation Process}
+  
+  \small
+  \begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Parameter & Values & Description \\ 
+    \hline
+    $n_\text{train}$ & 250, 1000, 5000 & Train set size \\  
+    $n_\text{test}$ & 250 & Test set size \\
+    $\pi$ & 0.1, 0.05, 0.025 & Proportion of rare examples \\
+    \hline
+    \end{tabular}
+    \caption{Parameters of the simulation}
+    \label{table:parameters}
+    \end{table}
+
+
+    \small
+    \begin{equation*}
+      (\mathbf{X}, y) \ \text{s.t.} \
+      \begin{cases} 
+          \mathbf{X} \sim N_2\left(
+            \begin{pmatrix}
+            0 \\ 0
+            \end{pmatrix},
+            \begin{pmatrix}
+            1 & 0 \\ 
+            0 & 1
+            \end{pmatrix}
+            \right) & \text{if } y = 0, \\
+          \mathbf{X} \sim N_2\left(
+            \begin{pmatrix}
+            1 \\ 1
+            \end{pmatrix},
+            \begin{pmatrix}
+            1 & -0.5 \\ 
+            -0.5 & 1
+            \end{pmatrix}
+            \right) & \text{if } y = 1.
+      \end{cases}
+  \end{equation*}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Data Generation}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/contour_data.png}
+    \caption{Contour plot of the data distribution}
+    \label{fig:contour_data}
+  \end{figure}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%% Agnese %%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+%%%%%%%%%%%%%%%% Andrea %%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%
+
 \begin{frame}[allowframebreaks, plain]
   \frametitle{References}
   \nocite{*}

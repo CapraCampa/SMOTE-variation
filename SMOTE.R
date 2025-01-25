@@ -108,7 +108,7 @@ results <- vector("list", 9)  # One entry for each trainset
 names(results) <- paste0("Trainset_", 1:9)
 
 ### NUMBER OF SIMULATIONS
-n_simulations = 100
+n_simulations = 1
 
 for (K in k_values){
   
@@ -796,3 +796,40 @@ for (K in k_values){
   combined_metrics <- acc_dt + acc_logistic + f1_dt + f1_logistic + plot_layout(ncol = 2)
   print(combined_metrics)
 }
+
+
+
+
+
+
+
+
+
+# Load required packages
+library(MASS)
+library(ggplot2)
+
+# Parameters of distribution of the two features
+mu_0 <- c(0, 0)
+cov_matrix_0 <- matrix(c(1, 0, 0, 1), nrow = 2)
+
+mu_1 <- c(1, 1)
+cov_matrix_1 <- matrix(c(1, -0.5, -0.5, 1), nrow = 2)
+
+# Generate data
+set.seed(123)
+x_0 <- mvrnorm(n = 1000, mu = mu_0, Sigma = cov_matrix_0)
+x_1 <- mvrnorm(n = 1000, mu = mu_1, Sigma = cov_matrix_1)
+
+# Combine into a data frame
+data_0 <- data.frame(x = x_0[, 1], y = x_0[, 2], group = "0")
+data_1 <- data.frame(x = x_1[, 1], y = x_1[, 2], group = "1")
+data <- rbind(data_0, data_1)
+
+# Create contour plot
+contour <- ggplot(data, aes(x = x, y = y, color = group)) +
+  geom_density_2d() +
+  scale_color_manual(values = c("grey", "darkgreen")) +
+  labs(x = "X1", y = "X2") +
+  theme_minimal()
+#print(contour)
