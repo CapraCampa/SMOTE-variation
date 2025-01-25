@@ -106,7 +106,7 @@ results <- vector("list", 9)  # One entry for each trainset
 names(results) <- paste0("Trainset_", 1:9)
 
 ### NUMBER OF SIMULATIONS
-n_simulations = 100
+n_simulations = 1
 
 for (K in k_values){
   
@@ -201,12 +201,15 @@ for (k in 1:n_simulations){
     trainset_name <- names(trainsets)[i]
     
     p <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
-      geom_point(aes(size = factor(y)), alpha = 0.8) + 
+      geom_point(aes(size = factor(y)), alpha = 1) + 
       scale_color_manual(values = c("grey", "blue")) + 
-      scale_size_manual(values = c(1, 2)) +
-      labs(title = "Train Dataset", x = "Feature 1", y = "Feature 2", color = "Class") +
+      scale_size_manual(values = c(1, 1.5)) +
+      labs(title = "Data", x = "X1", y = "X2", color = "Class") +
+      guides(size = "none") + # Remove legend for size
       theme_minimal()
+    
     #print(p)
+    
     
     
     
@@ -218,15 +221,34 @@ for (k in 1:n_simulations){
     smote <- SMOTE(trainset[,-3], trainset[,3], K = K, dup_size = 0)
     data.smote <- smote$data
     syn.data.smote <- smote$syn_data
-    p1 <- ggplot(trainset, aes(x = X1, y = X2, color = factor(y))) + 
-      geom_point(aes(size = factor(y)), alpha = 0.8, show.legend = c(color = TRUE, size = FALSE)) + 
-      scale_color_manual(values = c("grey", "blue")) + 
-      scale_size_manual(values = c(1, 2)) +
-      geom_point(data = syn.data.smote, aes(x = X1, y = X2, color = factor(class)), shape = 17, alpha = 0.4) +
-      labs(title = "SMOTE", x = "Feature 1", y = "Feature 2", color = "Class") +
+    p1 <- ggplot(data.smote, aes(x = X1, y = X2, color = factor(class))) + 
+      geom_point(aes(size = factor(class)), alpha = 0.4, show.legend = c(color = TRUE, size = FALSE)) + 
+      scale_color_manual(
+        values = c("grey", "darkgreen"), 
+        labels = c("0", "SMOTE")
+      ) + 
+      scale_size_manual(values = c(1, 1), guide = "none") +
+      geom_point(
+        data = trainset[trainset$y == 1,], 
+        aes(x = X1, y = X2, color = "trainset"),  # Add aesthetic mapping for color
+        alpha = 1, 
+        size = 1.5, 
+        show.legend = TRUE  # Ensure this layer appears in the legend
+      ) +
+      scale_color_manual(
+        values = c("grey", "darkgreen", "blue"),  # Include the color for the second geom_point
+        labels = c("0", "SMOTE", "Trainset (Class 1)")  # Add label for the second geom_point
+      ) +
+      labs(
+        title = "SMOTE", 
+        x = "X1", 
+        y = "X2", 
+        color = "Class"
+      ) +
       theme_minimal()
     
     #print(p1)
+    
     
     data.smote$class <- factor(data.smote$class) 
     smote_IR <- nrow(data.smote[data.smote$class == 1, ]) / nrow(data.smote)
@@ -240,15 +262,34 @@ for (k in 1:n_simulations){
     y <- data.smote.dirichlet$class
     
     
-    p2 <- ggplot(x, aes(x = X1, y = X2, color = factor(y))) + 
-      geom_point(aes(size = factor(y)), alpha = 0.8, show.legend = c(color = TRUE, size = FALSE)) + 
-      scale_color_manual(values = c("grey", "blue")) + 
-      scale_size_manual(values = c(1, 2)) +
-      geom_point(data = syn.data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class)), shape = 17, alpha = 0.4) +
-      labs(title = "SMOTE.DIRICHLET", x = "Feature 1", y = "Feature 2", color = "Class") +
+    p2 <- ggplot(data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class))) + 
+      geom_point(aes(size = factor(class)), alpha = 0.4, show.legend = c(color = TRUE, size = FALSE)) + 
+      scale_color_manual(
+        values = c("grey", "darkgreen"), 
+        labels = c("0", "SMOTE.DIRICHLET")
+      ) + 
+      scale_size_manual(values = c(1, 1), guide = "none") +
+      geom_point(
+        data = trainset[trainset$y == 1,], 
+        aes(x = X1, y = X2, color = "trainset"),  # Add aesthetic mapping for color
+        alpha = 1, 
+        size = 1.5, 
+        show.legend = TRUE  # Ensure this layer appears in the legend
+      ) +
+      scale_color_manual(
+        values = c("grey", "darkgreen", "blue"),  # Include the color for the second geom_point
+        labels = c("0", "SMOTE.DIRICHLET", "1")  # Add label for the second geom_point
+      ) +
+      labs(
+        title = "SMOTE.DIRICHLET", 
+        x = "X1", 
+        y = "X2", 
+        color = "Class"
+      ) +
       theme_minimal()
     
     #print(p2)
+    
     
     # Combine the two plots side-by-side
     combined_plot <- p1 + p2 + 
