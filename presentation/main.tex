@@ -1,0 +1,170 @@
+\documentclass{article}
+%\usepackage{arydshln}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{paralist}
+\usepackage{color}
+\usepackage[detect-weight=true, binary-units=true]{siunitx}
+\usepackage{pgfplots}
+\usepackage{authblk}%!TEX encoding = UTF-8 Unicode
+\usepackage[T1]{fontenc}
+\usepackage[american]{babel}
+\usepackage{indentfirst}
+\usepackage{cite}
+\usepackage[colorlinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{paralist}
+\usepackage{footnote}
+\usepackage{booktabs} 
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage[binary-units=true]{siunitx}
+\usepackage[inline]{enumitem}
+\pgfplotsset{compat=1.18}
+\renewcommand\vec{\boldsymbol}
+\date{}
+
+\title{
+	\begin{center}
+  		\includegraphics[width=0.125\textwidth]{UniTs_Logo.pdf}\\
+\begin{figure}
+  		    \centering
+  		    \label{fig:enter-label}
+  		\end{figure}
+  		  		\smallskip
+  		\Large {University of Trieste}\\
+		\smallskip
+  		\large \textit{Statistical Methods} Course\\
+		\smallskip
+		\small Academic Year 2024 -- 2025\\
+  		\rule{9cm}{.4pt}\\
+		\medskip
+  	\end{center}
+	SMOTE variant for unbalanced dataset in classification problems 
+}
+
+\author{Valeria De Stasio, Christian Faccio, Andrea Suklan, Agnese Valentini}
+
+
+
+% \DTMsavenow{now}%
+% \DTMtozulu{now}{currzulu}
+% \date{\footnotesize Last update on \DTMuse{currzulu}.}
+% \date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+In the literature, a lot of techniques have been proposed to solve classification problems. In these problems, the data belong to two or more different classes and the aim is to construct a model that predicts the correct class for new data.
+One key aspect that has to be kept in consideration is the data imbalance. Indeed, in many real world applications the most interesting class to predict is also the least common one. For example, in finance (fraud detection problems), in medicine (rare diseases detection) or in social sciences (anomalous behaviours detection). For simplicity, we will address only binary classification problem with numerical variables.
+It has been studied that an imbalance dataset produces suboptimal classification results: the learned model tends to predicts accurately only the most common class, severely misclassifying the rare class. For this reason, many solutions have been proposed either at the learning level or at the data level. 
+In the first case, existing classification algorithms have been modified to consider the imbalance in the dataset; in the second case, the original dataset is modified before applying the classification algorithm.
+Some important techniques of the second type are the Random Over Sampling Examples (ROSE) \cite{lunardon2014rose} or the Synthetic Minority Over-sampling Technique (SMOTE) \cite{chawla2002smote}. 
+The aim of this project is to implement and compare a variation of this second technique, studied recently in literature with the name of "SMOTE Dirichlet" \cite{matharaarachchi2024enhancing}. 
+
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Parameter & Values & Description \\ 
+\hline
+$n_\text{train}$ & 250, 1000, 5000 & Train set size \\  
+$n_\text{test}$ & 250 & Test set size \\
+$\pi$ & 0.1, 0.05, 0.025, 0.01 & Proportion of rare examples \\
+\hline
+\end{tabular}
+\caption{Parameters of the simulation}
+\label{table:parameters}
+\end{table}
+
+
+\section{Performance Measures}
+\label{sec:performance_measures}
+In the case of unbalanced datasets it has been noticed that the Accuracy (ACC) is not a reliable metric of evaluation: a trivial classifier which always classify new cases into the majority class (dummy classifier) will have an accuracy equal to the proportion of the majority class in the sample. We remind that Acc is computed as the ratio between correctly classified instances over all classified instances. More appropriate metrics include the True Positive Rate (TPR), also called recall, or the positive predictive value, also called precision. A combination of the two is given by the F1-score, which is the harmonic mean of precision and recall. All these metrics have to be computed for a specific threshold.
+An alternative for comparing performances with imbalanced dataset is the Area Under the Operating Curve (AUC ROC) which does not depend on a given threshold. The ROC Curve is obtained by plotting True Positive Rate (TPR) versus True Negative Rate (TNR) for different thresholds. The AUC measures the area under this curve and the larger the value the better the performance (for a perfect classifier AUC is 1). For the reason reported above, we chose to measure the F1 value (for a 0.5 threshold) and the AUC value.
+
+To test the performance of our method, we simulated both the train set and the test set. In this way, we managed to try different sizes and different proportion of imbalance in the train set, while we fixed the size of the test set for comparison reasons. The parameters of the train set are shown in the table \ref{table:parameters}. The data points for both the test and train sets were simulated from the following distribution:
+\begin{equation}
+    (\mathbf{X}, y) \ \text{s.t.} \
+    \begin{cases} 
+        \mathbf{X} \sim N_2\left(
+          \begin{pmatrix}
+          0 \\ 0
+          \end{pmatrix},
+          \begin{pmatrix}
+          1 & 0 \\ 
+          0 & 1
+          \end{pmatrix}
+          \right) & \text{if } y = 0, \\
+        \mathbf{X} \sim N_2\left(
+          \begin{pmatrix}
+          1 \\ 1
+          \end{pmatrix},
+          \begin{pmatrix}
+          1 & -0.5 \\ 
+          -0.5 & 1
+          \end{pmatrix}
+          \right) & \text{if } y = 1.
+    \end{cases}
+\end{equation}
+We balanced each train set with our SMOTE variant algorithm and then, for each train set obtained in this way, we trained the classifiers (classification tree and logit model) and evaluated their performance on the test set for $100$ times to obtain a more accurate estimate of the "true" performance and its variance. We compared the performances of the classifiers learned on the original unbalanced train set, on the SMOTE balanced train set and on our SMOTE Dirichlet balanced train set. To balance the dataset we generated as many minority class instances as needed to obtain a proportion of rare class in the train set equal to $0.5$. In the recent paper about Dirichlet SMOTE \cite{matharaarachchi2024enhancing} they took a slightly different approach by generating a fixed size dataset and applying Cross-fold Validation to test it. They tested their code with two different Imbalance Ratio (IR) and two different Outlier Ratio (OR) and run the simulation for 100 times.
+
+
+
+\section{Proposed solution}
+\label{sec:solution}
+The SMOTE algorithm was proposed in 2002 by Chawla et al. \cite{chawla2002smote}; in their paper they empirically showed that the performances of their algorithm with respect to other common techniques for imbalanced datasets were often better (for example they compared a naive bayes model with minority priors adjusted to take into account the scarcity of rare class instances).
+For each minority class instance, the SMOTE algorithm selects its k-nearest neighbours from the set of minority class instances. In the original paper the $k$ value was fixed as $5$. It then randomly generates synthetic instances along the line segments connecting the selected instance with one of its k-nearest neighbours. These synthetic instances increase the representation of the minority class in the original dataset.
+
+In our variant, for each minority class instance, the synthetic instances are created inside the convex hull formed by its k-nearest neighbours (not including itself). To this aim, we used a Dirichlet distribution to generate the k weights to use for the linear combination. This algorithm has already been proposed in the literature \cite{matharaarachchi2024enhancing} to counterbalance the SMOTE limitations in the presence of outliers. In the paper they even proposed three versions of the SMOTE Dirichlet: our idea corresponds to the Uniform Vector (UV) approach, in which the parameter of the Dirichlet distribution, $\alpha$, is chosen as a vector of equal values.
+In terms of parameters, both SMOTE and Dirichlet SMOTE employ a shared neighbourhood parameter $K$ that was set to $5$ since it serves as the prevalent standard across SMOTE and most of its variants \cite{chawla2002smote}. In the Dirichlet SMOTE there is also the parameter $ \alpha$ of the Dirichlet distribution. The parameter $\alpha$ is important because it determines how the $k$ generated values will be distributed: we chose $\alpha = \textbf{1}^{K} $ to ensure a generation of sparse enough weights for the linear combination of the points.
+
+\section{Experimental evaluation}
+\label{sec:experimental_evaluation}
+In this section we show the boxplots of the AUC and F1 values for all the models (decision tree, logistic regressor and k) trained on each dataset: the unbalanced one, the one balanced with SMOTE and the one balanced with Dirichlet SMOTE. 
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=15cm,height=8cm,keepaspectratio,  trim=0 0 0 30, clip]{tree_auc.png}
+	\caption{AUC values of the decision tree. The title of each boxplot is in the form: "Trainset\_size of trainset\_proportion of minority class instances".}
+	\label{fig:treeAUC}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=15cm,height=8cm,keepaspectratio, trim=0 0 0 30,clip]{Tree_f1.png}
+	\caption{F1 values of the decision tree. The title of each boxplot is in the form: "Trainset\_size of trainset\_proportion of minority class instances".}
+	\label{fig:treeF1}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=15cm,height=8cm,keepaspectratio, trim=0 0 0 30,clip]{logistic_auc.png}
+	\caption{AUC values of the logistic regressor. The title of each boxplot is in the form: "Trainset\_size of trainset\_proportion of minority class instances".}
+	\label{fig:logisticAUC}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=15cm,height=8cm,keepaspectratio,trim=0 0 0 30,clip]{logistic_f1.png}
+	\caption{F1 values of the logistic regressor. The title of each boxplot is in the form: "Trainset\_size of trainset\_proportion of minority class instances".}
+	\label{fig:logisticF1}
+\end{figure}
+
+The boxplots of AUC values for the decision tree (fig.\ref{fig:treeAUC}) shows that the larger the original training set, the higher the AUC results. A tendency towards a depletion in accuracy, when the imbalance increases, is still evident in both the models.
+
+The use of logit models (instead of a classification tree) generally leads to higher levels of accuracy, however the similarity of the AUC values (fig.\ref{fig:logisticAUC}) obtained from the logistic models trained on different datasets generates some perplexity. We are still investigating what could be the cause of it. The F1 values (fig.\ref{fig:logisticF1}) instead follow a more reasonable pattern: the model trained on unbalanced data performs worse than the models trained on balanced data. This holds true also for the F1 values of the decision trees (fig.\ref{fig:treeF1}).
+
+In general our modified version of SMOTE performs quite similar for both models and for all types of train sets.
+We can say that there was a clear improvement with respect to the models trained on the unbalanced dataset and that there seem to be less variance in the AUC values for the models learned on the train sets balanced with the Dirichlet SMOTE than the ones learned on train sets balanced using SMOTE.
+
+\section{Conclusions}
+\label{sec:conclusions}
+To complete our work, some experimentations are still needed: we need to understand why the AUC values for the logistic regressor models are so uniform, we want to experiment some more values for the parameters of the SMOTE Dirichlet function and we want to compare the performances of the k-nn model on these same datasets. Additionally, inspired by the paper aforementioned \cite{matharaarachchi2024enhancing}, we want to verify if our variant could be of use in the presence of outliers.
+
+\bibliographystyle{plain}
+\bibliography{bibliography}
+\end{document}

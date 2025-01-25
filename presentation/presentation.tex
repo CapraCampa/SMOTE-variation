@@ -1,0 +1,44 @@
+\documentclass{beamer}
+
+% THEME SETTINGS
+\usetheme{CambridgeUS}
+\usecolortheme{dolphin}
+
+% Bibliography
+\usepackage[backend=biber, style=authoryear]{biblatex}
+\addbibresource{bibliography/bibliography.bib} % Point to your .bib file
+\setbeamertemplate{frametitle continuation}{}
+
+
+\title[SMOTE-DIRICHLET]{\LARGE SMOTE VARIANT FOR UNBALANCED DATA IN CLASSIFICATION PROBLEMS}
+\author[De Stasio, Faccio, Suklan, Valentini]{\small Valeria De Stasio, Christian Faccio, Andrea Suklan, Agnese Valentini}
+
+\begin{document}
+
+% TITLE SLIDE
+\begin{frame}
+  \centering
+  \includegraphics[width=0.2\textwidth]{figures/logo.png} \\
+  \rule{0.5\linewidth}{0.3pt}
+  \titlepage
+\end{frame}
+
+% SLIDE 1
+\begin{frame}
+  \frametitle{Content}
+  \begin{itemize}
+    \item Introduction to the problem
+    \item Data generation / Assessment method 
+    \item SMOTE-DIRICHLET
+    \item Results
+  \end{itemize}
+\end{frame}
+
+% REFERENCES SLIDE
+\begin{frame}[allowframebreaks, plain]
+  \frametitle{References}
+  \nocite{*}
+  \printbibliography
+\end{frame}
+
+\end{document}

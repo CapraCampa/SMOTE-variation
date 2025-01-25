@@ -1,0 +1,42 @@
+% FONT SETTINGS (fontspec works only with XeLaTeX and LuaLaTeX)
+\usepackage{fontspec}
+% Choose a main font (replace with any font you like installed on your system)
+\setmainfont{TeX Gyre Termes}
+
+% THEME SETTINGS
+\usetheme{Singapore} % Choose your preferred Beamer theme
+\usecolortheme{dolphin} % Optional color theme
+
+% LANGUAGE AND ENCODING
+% \usepackage{polyglossia}
+% \setmainlanguage{english}
+
+% MATH & OTHER USEFUL PACKAGES
+\usepackage{amsmath, amssymb}   % Math symbols and environments
+\usepackage{graphicx}           % Inserting images
+\usepackage{booktabs}           % Better tables
+\usepackage{siunitx}            % For SI units and better number formatting
+\usepackage{hyperref}           % For clickable links
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% Custom Commands
+% \newcommand{\R}{\mathbb{R}}
+
+% Bibliography (if needed)
+\usepackage[backend=biber, style=authoryear]{biblatex}
+\addbibresource{bibliography/bibliography.bib}
+
+% Graphics Path
+\graphicspath{{figures/}}
+
+% Additional Packages
+% \usepackage{tikz} % For drawing
+% \usepackage{pgfplots} % For plotting
+
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry}{size=\footnotesize}
