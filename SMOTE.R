@@ -979,32 +979,109 @@ print(combined_metrics)
 }
 
 
-median_results <- vector("list", 9)
+# median_results <- vector("list", 9)
+# 
+# for (l in 1:9) {
+#   median_results[[l]] <- list(
+#     logistic_regressor = vector("list", 3),
+#     decision_tree = vector("list", 3)
+#   )
+#   
+#   # Loop through each model type and each version
+#   for (model_type in c("logistic_regressor", "decision_tree")) {
+#     for (version in 1:3) {
+#       # Extract metrics
+#       auc_values <- results[[l]][[model_type]][[version]]$auc
+#       balanced_acc_values <- results[[l]][[model_type]][[version]]$balanced_acc
+#       f1_values <- results[[l]][[model_type]][[version]]$f1
+#       
+#       # Compute medians
+#       median_results[[l]][[model_type]][[version]] <- list(
+#         auc_median = median(auc_values, na.rm = TRUE),
+#         balanced_acc_median = median(balanced_acc_values, na.rm = TRUE),
+#         f1_median = median(f1_values, na.rm = TRUE)
+#       )
+#     }
+#   }
+# }
+# 
+# # View the median results
+# median_results
+# 
 
-for (l in 1:9) {
-  median_results[[l]] <- list(
-    logistic_regressor = vector("list", 3),
-    decision_tree = vector("list", 3)
-  )
-  
-  # Loop through each model type and each version
-  for (model_type in c("logistic_regressor", "decision_tree")) {
-    for (version in 1:3) {
-      # Extract metrics
-      auc_values <- results[[l]][[model_type]][[version]]$auc
-      balanced_acc_values <- results[[l]][[model_type]][[version]]$balanced_acc
-      f1_values <- results[[l]][[model_type]][[version]]$f1
-      
-      # Compute medians
-      median_results[[l]][[model_type]][[version]] <- list(
-        auc_median = median(auc_values, na.rm = TRUE),
-        balanced_acc_median = median(balanced_acc_values, na.rm = TRUE),
-        f1_median = median(f1_values, na.rm = TRUE)
-      )
-    }
-  }
-}
 
-# View the median results
-median_results
 
+# 
+# # Install mvtnorm if not already installed
+# if (!require(mvtnorm)) {
+#   install.packages("mvtnorm")
+#   library(mvtnorm)
+# } else {
+#   library(mvtnorm)
+# }
+# 
+# 
+# # Parameters for the first distribution
+# mu_0 <- c(0, 0)
+# cov_matrix_0 <- matrix(c(1, 0, 
+#                          0, 1), 
+#                        nrow = 2)
+# 
+# # Parameters for the second distribution
+# mu_1 <- c(1, 1)
+# cov_matrix_1 <- matrix(c(1, -0.5, 
+#                          -0.5, 1), 
+#                        nrow = 2)
+# 
+# # Sample sizes
+# n_0 <- 1000 * (1 - 0.025)  # 975
+# n_1 <- 1000 * 0.025        # 25
+# 
+# 
+# # Define the range for x and y axes
+# x_range <- seq(-3.5, 3.5, length.out = 100)
+# y_range <- seq(-3.5, 3.5, length.out = 100)
+# 
+# # Create a grid of (x, y) points
+# grid <- expand.grid(x = x_range, y = y_range)
+# 
+# 
+# # Compute the density for the first distribution, scaled by n_0
+# density_0 <- dmvnorm(grid, mean = mu_0, sigma = cov_matrix_0) * n_0
+# 
+# # Compute the density for the second distribution, scaled by n_1
+# density_1 <- dmvnorm(grid, mean = mu_1, sigma = cov_matrix_1) * n_1
+# 
+# # Reshape the density vectors into matrices for contour plotting
+# z0 <- matrix(density_0, nrow = 100, ncol = 100)
+# z1 <- matrix(density_1, nrow = 100, ncol = 100)
+# 
+# # Set up square plotting region
+# par(pty = "s")  # Set plot region to square
+# 
+# # Plot the first contour
+# contour(x_range, y_range, z0, 
+#         col = "grey", 
+#         lwd = 2,
+#         xlab = "X1", 
+#         ylab = "X2", 
+#         drawlabels = F)
+# 
+# # Add the second contour to the existing plot
+# contour(x_range, y_range, z1, 
+#         col = "darkgreen", 
+#         lwd = 2, 
+#         add = TRUE,
+#         drawlabels = F)
+# 
+# # Add legend outside the plot
+# legend("topright", 
+#        legend = c("0", "1"),
+#        col = c("grey", "darkgreen"), 
+#        lwd = 2, 
+#        xpd = TRUE,    # Allow drawing outside the plot region
+#        inset = c(-0.3, 0))  # Adjust the position (negative x inset moves it outside)
+# grid()
+# 
+# 
+# 
