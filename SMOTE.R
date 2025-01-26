@@ -17,70 +17,6 @@ library(ROCR)
 library(patchwork)
 
 
-# our new function, there have to be at least  
-# 2 points within the rare class
-# SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0){
-#   ncD = ncol(X)
-#   n_target = table(target)
-#   classP = names(which.min(n_target))
-#   # points of the rare class
-#   P_set = subset(X, target == names(which.min(n_target)))[sample(min(n_target)), 
-#   ]
-#   N_set = subset(X, target != names(which.min(n_target)))
-#   
-#   P_class = rep(names(which.min(n_target)), nrow(P_set))
-#   N_class = target[target != names(which.min(n_target))]
-#   sizeP = nrow(P_set)
-#   K <- min(sizeP - 1, K)
-#   sizeN = nrow(N_set)
-#   knear = knearest(P_set, P_set, K)
-#   
-#   
-#   # sum_dup is the number of new points to be generated for each point
-#   # If dup_size is zero, it returns the number of rounds 
-#   # to duplicate positive to nearly equal to the number of negative instances
-#   # (50% rare, 50% common)
-#   sum_dup = n_dup_max(sizeP + sizeN, sizeP, sizeN, dup_size)
-#   syn_dat = NULL
-#   for (i in 1:sizeP) {
-#     
-#     # matrix of sum_dup rows
-#     # each row is a vector of k weights that sum to 1
-#     g <- matrix(0, nrow = sum_dup, ncol = K)
-#     for(j in 1:sum_dup) {
-#       g[j, ] <- MCMCpack::rdirichlet(1, rep(1, K))
-#     }
-#     
-#     # multiplies the sum_dup weights for the k neighbors
-#     # in this way I obtain sum_dup new points
-#     # I put the check in the case of K=1
-#     if (K==1){
-#       syn_i = g %*% matrix(as.matrix(P_set[knear[i],]), ncol = ncD, byrow = F)
-#     }else{
-#       syn_i = g %*% matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = F)
-#     }
-#     
-#     syn_dat = rbind(syn_dat, syn_i)
-#   }
-#   
-#   P_set[, ncD + 1] = P_class
-#   colnames(P_set) = c(colnames(X), "class")
-#   N_set[, ncD + 1] = N_class
-#   colnames(N_set) = c(colnames(X), "class")
-#   rownames(syn_dat) = NULL
-#   syn_dat = data.frame(syn_dat)
-#   syn_dat[, ncD + 1] = rep(names(which.min(n_target)), nrow(syn_dat))
-#   colnames(syn_dat) = c(colnames(X), "class")
-#   NewD = rbind(P_set, syn_dat, N_set)
-#   rownames(NewD) = NULL
-#   D_result = list(data = NewD, syn_data = syn_dat, orig_N = N_set, 
-#                   orig_P = P_set, K = K, K_all = NULL, dup_size = sum_dup, 
-#                   outcast = NULL, eps = NULL, method = "SMOTE")
-#   class(D_result) = "gen_data"
-#   return(D_result)
-# }
-
-
 SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0){
   ncD = ncol(X)
   n_target = table(target)
@@ -107,14 +43,14 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0){
     
     # matrix of sum_dup rows
     # each row is a vector of k weights that sum to 1
-    g <- matrix(0, nrow = sum_dup, ncol = K+1)
+    g <- matrix(0, nrow = sum_dup, ncol = K)
     for(j in 1:sum_dup) {
-      g[j, ] <- MCMCpack::rdirichlet(1, rep(1, K+1))
+      g[j, ] <- MCMCpack::rdirichlet(1, rep(1, K))
     }
     
     # multiplies the sum_dup weights for the k neighbors
     # in this way I obtain sum_dup new points
-    syn_i = g %*% rbind(matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = F), matrix(as.matrix(P_set[i,]), ncol = ncD, byrow = F))
+    syn_i = g %*% rbind(matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = F))
     
     
     syn_dat = rbind(syn_dat, syn_i)
@@ -187,7 +123,7 @@ train_size <- c(600, 1000, 5000)
 pi <- c(0.1, 0.05, 0.025)
 
 
-k_values <- c(3)
+k_values <- c(3,5)
 
 # Parameters of distribution of the two features
 mu_0 <- c(0, 0)
@@ -203,7 +139,7 @@ results <- vector("list", 9)  # One entry for each trainset
 names(results) <- paste0("Trainset_", 1:9)
 
 ### NUMBER OF SIMULATIONS
-n_simulations = 100
+n_simulations = 10
 
 for (K in k_values){
   
@@ -327,11 +263,6 @@ for (k in 1:n_simulations){
     syn.data.smote <- smote$syn_data
     p1 <- ggplot(data.smote, aes(x = X1, y = X2, color = factor(class))) + 
       geom_point(aes(size = factor(class)), alpha = 0.4, show.legend = c(color = TRUE, size = FALSE)) + 
-      scale_color_manual(
-        values = c("grey", "darkgreen"), 
-        labels = c("0", "SMOTE")
-      ) + 
-      scale_size_manual(values = c(1, 1), guide = "none") +
       geom_point(
         data = trainset[trainset$y == 1,], 
         aes(x = X1, y = X2, color = "trainset"),  # Add aesthetic mapping for color
@@ -340,9 +271,10 @@ for (k in 1:n_simulations){
         show.legend = TRUE  # Ensure this layer appears in the legend
       ) +
       scale_color_manual(
-        values = c("grey", "darkgreen", "blue"),  # Include the color for the second geom_point
-        labels = c("0", "SMOTE", "1")  # Add label for the second geom_point
+        values = c("grey", "darkgreen", "blue"),  # Define all colors here
+        labels = c("0", "SMOTE", "trainset")  # Define all labels here
       ) +
+      scale_size_manual(values = c(1, 1), guide = "none") +
       labs(
         title = "SMOTE", 
         x = "X1", 
@@ -367,11 +299,6 @@ for (k in 1:n_simulations){
     
     p2 <- ggplot(data.smote.dirichlet, aes(x = X1, y = X2, color = factor(class))) + 
       geom_point(aes(size = factor(class)), alpha = 0.4, show.legend = c(color = TRUE, size = FALSE)) + 
-      scale_color_manual(
-        values = c("grey", "darkgreen"), 
-        labels = c("0", "SMOTE.DIRICHLET")
-      ) + 
-      scale_size_manual(values = c(1, 1), guide = "none") +
       geom_point(
         data = trainset[trainset$y == 1,], 
         aes(x = X1, y = X2, color = "trainset"),  # Add aesthetic mapping for color
@@ -380,9 +307,10 @@ for (k in 1:n_simulations){
         show.legend = TRUE  # Ensure this layer appears in the legend
       ) +
       scale_color_manual(
-        values = c("grey", "darkgreen", "blue"),  # Include the color for the second geom_point
-        labels = c("0", "SMOTE.DIRICHLET", "1")  # Add label for the second geom_point
+        values = c("grey", "darkgreen", "blue"),  # Define all colors here
+        labels = c("0", "SMOTE.DIRICHLET", "trainset")  # Define all labels here
       ) +
+      scale_size_manual(values = c(1, 1), guide = "none") +
       labs(
         title = "SMOTE.DIRICHLET", 
         x = "X1", 
@@ -398,7 +326,7 @@ for (k in 1:n_simulations){
     combined_plot <- p1 + p2 + 
       plot_layout(ncol = 2) # Arrange plots in a single row
     
-    print(combined_plot)
+    #print(combined_plot)
     
     data.smote.dirichlet$class <- factor(data.smote.dirichlet$class)
     
@@ -979,10 +907,10 @@ acc_logistic <- ggplot(plot_data, aes(x = factor(version), y = acc, fill = facto
 
 # plotting metrics----------------------------------------------------------------
 
-#combined_metrics <- acc_dt + acc_logistic + f1_dt + f1_logistic + plot_layout(ncol = 2)
-#print(combined_metrics)
+combined_metrics <- acc_dt + acc_logistic + f1_dt + f1_logistic + plot_layout(ncol = 2)
+print(combined_metrics)
 
-print((auc_dt +auc_logistic))
+#print((auc_dt +auc_logistic))
 
 }
 
