@@ -17,6 +17,70 @@ library(ROCR)
 library(patchwork)
 
 
+# our new function, there have to be at least  
+# 2 points within the rare class
+# SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0){
+#   ncD = ncol(X)
+#   n_target = table(target)
+#   classP = names(which.min(n_target))
+#   # points of the rare class
+#   P_set = subset(X, target == names(which.min(n_target)))[sample(min(n_target)), 
+#   ]
+#   N_set = subset(X, target != names(which.min(n_target)))
+#   
+#   P_class = rep(names(which.min(n_target)), nrow(P_set))
+#   N_class = target[target != names(which.min(n_target))]
+#   sizeP = nrow(P_set)
+#   K <- min(sizeP - 1, K)
+#   sizeN = nrow(N_set)
+#   knear = knearest(P_set, P_set, K)
+#   
+#   
+#   # sum_dup is the number of new points to be generated for each point
+#   # If dup_size is zero, it returns the number of rounds 
+#   # to duplicate positive to nearly equal to the number of negative instances
+#   # (50% rare, 50% common)
+#   sum_dup = n_dup_max(sizeP + sizeN, sizeP, sizeN, dup_size)
+#   syn_dat = NULL
+#   for (i in 1:sizeP) {
+#     
+#     # matrix of sum_dup rows
+#     # each row is a vector of k weights that sum to 1
+#     g <- matrix(0, nrow = sum_dup, ncol = K)
+#     for(j in 1:sum_dup) {
+#       g[j, ] <- MCMCpack::rdirichlet(1, rep(1, K))
+#     }
+#     
+#     # multiplies the sum_dup weights for the k neighbors
+#     # in this way I obtain sum_dup new points
+#     # I put the check in the case of K=1
+#     if (K==1){
+#       syn_i = g %*% matrix(as.matrix(P_set[knear[i],]), ncol = ncD, byrow = F)
+#     }else{
+#       syn_i = g %*% matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = F)
+#     }
+#     
+#     syn_dat = rbind(syn_dat, syn_i)
+#   }
+#   
+#   P_set[, ncD + 1] = P_class
+#   colnames(P_set) = c(colnames(X), "class")
+#   N_set[, ncD + 1] = N_class
+#   colnames(N_set) = c(colnames(X), "class")
+#   rownames(syn_dat) = NULL
+#   syn_dat = data.frame(syn_dat)
+#   syn_dat[, ncD + 1] = rep(names(which.min(n_target)), nrow(syn_dat))
+#   colnames(syn_dat) = c(colnames(X), "class")
+#   NewD = rbind(P_set, syn_dat, N_set)
+#   rownames(NewD) = NULL
+#   D_result = list(data = NewD, syn_data = syn_dat, orig_N = N_set, 
+#                   orig_P = P_set, K = K, K_all = NULL, dup_size = sum_dup, 
+#                   outcast = NULL, eps = NULL, method = "SMOTE")
+#   class(D_result) = "gen_data"
+#   return(D_result)
+# }
+
+
 SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0){
   ncD = ncol(X)
   n_target = table(target)
@@ -139,7 +203,7 @@ results <- vector("list", 9)  # One entry for each trainset
 names(results) <- paste0("Trainset_", 1:9)
 
 ### NUMBER OF SIMULATIONS
-n_simulations = 10
+n_simulations = 100
 
 for (K in k_values){
   
@@ -215,20 +279,20 @@ for (k in 1:n_simulations){
     
     ###################################################################
     # With the same method and same parameter pi, compute test set
-    n_0 <- round(600 * (1 - prob))
-    n_1 <- round(600 * prob)
-    x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
-    x_0 <- data.frame(x_0)
-    x_0$y <- rep(0, n_0)
-    x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
-    x_1 <- data.frame(x_1)
-    x_1$y <- rep(1, n_1)
-    combined_data <- rbind(x_0, x_1)
-    
-    # Save test dataset in the list
-    dataset_name <- paste0("validation_", gsub("\\.", "", as.character(prob)))
-    validationsets[[dataset_name]] <- combined_data
-    ###################################################################
+    # n_0 <- round(600 * (1 - prob))
+    # n_1 <- round(600 * prob)
+    # x_0 <- mvrnorm(n_0, mu_0, cov_matrix_0)
+    # x_0 <- data.frame(x_0)
+    # x_0$y <- rep(0, n_0)
+    # x_1 <- mvrnorm(n_1, mu_1, cov_matrix_1)
+    # x_1 <- data.frame(x_1)
+    # x_1$y <- rep(1, n_1)
+    # combined_data <- rbind(x_0, x_1)
+    # 
+    # # Save test dataset in the list
+    # dataset_name <- paste0("validation_", gsub("\\.", "", as.character(prob)))
+    # validationsets[[dataset_name]] <- combined_data
+    # ###################################################################
     
     # print("IR:")
     # print((1-prob)/(prob))
@@ -371,89 +435,45 @@ for (k in 1:n_simulations){
     
     ###########################################################################
     
-    validationset <- validationsets[[test_index]]
-    validationset$y <- factor(validationset$y, levels=c(0,1))
-    
-    
-    pred.tree <- predict(tree, newdata = validationset,type = "prob")
-    pred.tree.smote <- predict(tree.smote, newdata = validationset,type = "prob")
-    pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = validationset)
-    
-    threshold = find_optimal_threshold(pred.tree[,2],validationset$y)
-    threshold.tree.smote <- find_optimal_threshold(pred.tree.smote[,2],validationset$y)
-    threshold.tree.smote.dirichlet <- find_optimal_threshold(pred.tree.smote.dirichlet[,2],validationset$y)
-    
-    ###############
-    pred.tree <- predict(tree, newdata = testset,type = "prob")
-    pred.tree.smote <- predict(tree.smote, newdata = testset,type = "prob")
-    pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = testset)
-    
-    pred.tree.class <- ifelse(pred.tree[,2] > threshold, 1, 0)
-    pred.tree.smote.class <- ifelse(pred.tree.smote[,2] > threshold.tree.smote, 1, 0)
-    pred.tree.smote.dirichlet.class <- ifelse(pred.tree.smote.dirichlet[,2] > threshold.tree.smote.dirichlet, 1, 0)
-    #################
-    
-    prob_class_1 <- predict(fit, newdata = validationset, type= "response")      
-    prob_class_0 <- 1 - prob_class_1   
-    pred.fit <- cbind(prob_class_0, prob_class_1)
-    
-    prob_class_1 <- predict(fit.smote, newdata = validationset, type="response")      
-    prob_class_0 <- 1 - prob_class_1   
-    pred.fit.smote <- cbind(prob_class_0, prob_class_1)
-    
-    prob_class_1 <- predict(fit.smote.dirichlet, newdata = validationset, type="response")      
-    prob_class_0 <- 1 - prob_class_1   
-    pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
-    
-    threshold <- find_optimal_threshold(pred.fit[,2],validationset$y)
-    threshold.fit.smote <- find_optimal_threshold(pred.fit.smote[,2],validationset$y)
-    threshold.fit.smote.dirichlet <- find_optimal_threshold(pred.fit.smote.dirichlet[,2],validationset$y)
-    
-    ################
-    prob_class_1 <- predict(fit, newdata = testset, type= "response")      
-    prob_class_0 <- 1 - prob_class_1   
-    pred.fit <- cbind(prob_class_0, prob_class_1)
-    
-    prob_class_1 <- predict(fit.smote, newdata = testset, type="response")      
-    prob_class_0 <- 1 - prob_class_1   
-    pred.fit.smote <- cbind(prob_class_0, prob_class_1)
-    
-    prob_class_1 <- predict(fit.smote.dirichlet, newdata = testset, type="response")      
-    prob_class_0 <- 1 - prob_class_1   
-    pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
-    
-    pred.fit.class <- ifelse(pred.fit[,2] > threshold, 1, 0)
-    pred.fit.smote.class <- ifelse(pred.fit.smote[,2] > threshold.fit.smote, 1, 0)
-    pred.fit.smote.dirichlet.class <- ifelse(pred.fit.smote.dirichlet[,2] > threshold.fit.smote.dirichlet, 1, 0)
-    
-    pred.fit.class <- factor(pred.fit.class, levels = c(0,1))
-    pred.fit.smote.class <- factor(pred.fit.smote.class, levels = c(0,1))
-    pred.fit.smote.dirichlet.class <- factor(pred.fit.smote.dirichlet.class,levels = c(0,1))
-    #############
-    
-    
-    
-    # Find optimal threshold ------------------------
-    
+    # validationset <- validationsets[[test_index]]
+    # validationset$y <- factor(validationset$y, levels=c(0,1))
+    # 
+    # 
+    # pred.tree <- predict(tree, newdata = validationset,type = "prob")
+    # pred.tree.smote <- predict(tree.smote, newdata = validationset,type = "prob")
+    # pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = validationset)
+    # 
+    # threshold = find_optimal_threshold(pred.tree[,2],validationset$y)
+    # threshold.tree.smote <- find_optimal_threshold(pred.tree.smote[,2],validationset$y)
+    # threshold.tree.smote.dirichlet <- find_optimal_threshold(pred.tree.smote.dirichlet[,2],validationset$y)
+    # 
+    # ###############
     # pred.tree <- predict(tree, newdata = testset,type = "prob")
     # pred.tree.smote <- predict(tree.smote, newdata = testset,type = "prob")
     # pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = testset)
     # 
-    # #threshold = 0.5
-    # #threshold.tree.smote = 0.5
-    # #threshold.tree.smote.dirichlet = 0.5
-    # threshold.tree.smote <- find_optimal_threshold(pred.tree.smote[,2],testset$y)
-    # threshold = find_optimal_threshold(pred.tree[,2],testset$y)
-    # threshold.tree.smote.dirichlet <- find_optimal_threshold(pred.tree.smote.dirichlet[,2],testset$y)
-    # 
-    # #cat(trainset_name,"\n")
-    # #cat("Tree thresholds: ", threshold, threshold.tree.smote, threshold.tree.smote.dirichlet, "\n")
-    # ###############
     # pred.tree.class <- ifelse(pred.tree[,2] > threshold, 1, 0)
     # pred.tree.smote.class <- ifelse(pred.tree.smote[,2] > threshold.tree.smote, 1, 0)
     # pred.tree.smote.dirichlet.class <- ifelse(pred.tree.smote.dirichlet[,2] > threshold.tree.smote.dirichlet, 1, 0)
     # #################
     # 
+    # prob_class_1 <- predict(fit, newdata = validationset, type= "response")      
+    # prob_class_0 <- 1 - prob_class_1   
+    # pred.fit <- cbind(prob_class_0, prob_class_1)
+    # 
+    # prob_class_1 <- predict(fit.smote, newdata = validationset, type="response")      
+    # prob_class_0 <- 1 - prob_class_1   
+    # pred.fit.smote <- cbind(prob_class_0, prob_class_1)
+    # 
+    # prob_class_1 <- predict(fit.smote.dirichlet, newdata = validationset, type="response")      
+    # prob_class_0 <- 1 - prob_class_1   
+    # pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
+    # 
+    # threshold <- find_optimal_threshold(pred.fit[,2],validationset$y)
+    # threshold.fit.smote <- find_optimal_threshold(pred.fit.smote[,2],validationset$y)
+    # threshold.fit.smote.dirichlet <- find_optimal_threshold(pred.fit.smote.dirichlet[,2],validationset$y)
+    # 
+    # ################
     # prob_class_1 <- predict(fit, newdata = testset, type= "response")      
     # prob_class_0 <- 1 - prob_class_1   
     # pred.fit <- cbind(prob_class_0, prob_class_1)
@@ -466,15 +486,6 @@ for (k in 1:n_simulations){
     # prob_class_0 <- 1 - prob_class_1   
     # pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
     # 
-    # #threshold= 0.2
-    # #threshold.fit.smote <- 0.75
-    # #threshold.fit.smote.dirichlet <- 0.75
-    # threshold <- find_optimal_threshold(pred.fit[,2],testset$y)
-    # threshold.fit.smote <- find_optimal_threshold(pred.fit.smote[,2],testset$y)
-    # threshold.fit.smote.dirichlet <- find_optimal_threshold(pred.fit.smote.dirichlet[,2],testset$y)
-    # 
-    # #cat("Fit thresholds: ", threshold, threshold.fit.smote, threshold.fit.smote.dirichlet, "\n")
-    # ################
     # pred.fit.class <- ifelse(pred.fit[,2] > threshold, 1, 0)
     # pred.fit.smote.class <- ifelse(pred.fit.smote[,2] > threshold.fit.smote, 1, 0)
     # pred.fit.smote.dirichlet.class <- ifelse(pred.fit.smote.dirichlet[,2] > threshold.fit.smote.dirichlet, 1, 0)
@@ -483,6 +494,59 @@ for (k in 1:n_simulations){
     # pred.fit.smote.class <- factor(pred.fit.smote.class, levels = c(0,1))
     # pred.fit.smote.dirichlet.class <- factor(pred.fit.smote.dirichlet.class,levels = c(0,1))
     # #############
+    # 
+    
+    
+    # Find optimal threshold ------------------------
+    
+    pred.tree <- predict(tree, newdata = testset,type = "prob")
+    pred.tree.smote <- predict(tree.smote, newdata = testset,type = "prob")
+    pred.tree.smote.dirichlet <- predict(tree.smote.dirichlet, newdata = testset)
+
+    threshold = pi[(ceiling(i/3))]
+    threshold.tree.smote = 0.5
+    threshold.tree.smote.dirichlet = 0.5
+    # threshold.tree.smote <- find_optimal_threshold(pred.tree.smote[,2],testset$y)
+    # threshold = find_optimal_threshold(pred.tree[,2],testset$y)
+    # threshold.tree.smote.dirichlet <- find_optimal_threshold(pred.tree.smote.dirichlet[,2],testset$y)
+
+    #cat(trainset_name,"\n")
+    #cat("Tree thresholds: ", threshold, threshold.tree.smote, threshold.tree.smote.dirichlet, "\n")
+    ###############
+    pred.tree.class <- ifelse(pred.tree[,2] > threshold, 1, 0)
+    pred.tree.smote.class <- ifelse(pred.tree.smote[,2] > threshold.tree.smote, 1, 0)
+    pred.tree.smote.dirichlet.class <- ifelse(pred.tree.smote.dirichlet[,2] > threshold.tree.smote.dirichlet, 1, 0)
+    #################
+
+    prob_class_1 <- predict(fit, newdata = testset, type= "response")
+    prob_class_0 <- 1 - prob_class_1
+    pred.fit <- cbind(prob_class_0, prob_class_1)
+
+    prob_class_1 <- predict(fit.smote, newdata = testset, type="response")
+    prob_class_0 <- 1 - prob_class_1
+    pred.fit.smote <- cbind(prob_class_0, prob_class_1)
+
+    prob_class_1 <- predict(fit.smote.dirichlet, newdata = testset, type="response")
+    prob_class_0 <- 1 - prob_class_1
+    pred.fit.smote.dirichlet <- cbind(prob_class_0, prob_class_1)
+
+    threshold= pi[(ceiling(i/3))]
+    threshold.fit.smote <- 0.5
+    threshold.fit.smote.dirichlet <- 0.5
+    # threshold <- find_optimal_threshold(pred.fit[,2],testset$y)
+    # threshold.fit.smote <- find_optimal_threshold(pred.fit.smote[,2],testset$y)
+    # threshold.fit.smote.dirichlet <- find_optimal_threshold(pred.fit.smote.dirichlet[,2],testset$y)
+
+    #cat("Fit thresholds: ", threshold, threshold.fit.smote, threshold.fit.smote.dirichlet, "\n")
+    ################
+    pred.fit.class <- ifelse(pred.fit[,2] > threshold, 1, 0)
+    pred.fit.smote.class <- ifelse(pred.fit.smote[,2] > threshold.fit.smote, 1, 0)
+    pred.fit.smote.dirichlet.class <- ifelse(pred.fit.smote.dirichlet[,2] > threshold.fit.smote.dirichlet, 1, 0)
+
+    pred.fit.class <- factor(pred.fit.class, levels = c(0,1))
+    pred.fit.smote.class <- factor(pred.fit.smote.class, levels = c(0,1))
+    pred.fit.smote.dirichlet.class <- factor(pred.fit.smote.dirichlet.class,levels = c(0,1))
+    #############
     # 
     # compute metrics to compare our variant to the original technique --------
     
