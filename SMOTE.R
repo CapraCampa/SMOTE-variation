@@ -114,7 +114,7 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0){
     
     # multiplies the sum_dup weights for the k neighbors
     # in this way I obtain sum_dup new points
-    syn_i = g %*% rbind(matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = F))
+    syn_i = g %*% matrix(as.matrix(P_set[knear[i, ],]), ncol = ncD, byrow = FALSE)
     
     
     syn_dat = rbind(syn_dat, syn_i)
@@ -977,4 +977,34 @@ print(combined_metrics)
 #print((auc_dt +auc_logistic))
 
 }
+
+
+median_results <- vector("list", 9)
+
+for (l in 1:9) {
+  median_results[[l]] <- list(
+    logistic_regressor = vector("list", 3),
+    decision_tree = vector("list", 3)
+  )
+  
+  # Loop through each model type and each version
+  for (model_type in c("logistic_regressor", "decision_tree")) {
+    for (version in 1:3) {
+      # Extract metrics
+      auc_values <- results[[l]][[model_type]][[version]]$auc
+      balanced_acc_values <- results[[l]][[model_type]][[version]]$balanced_acc
+      f1_values <- results[[l]][[model_type]][[version]]$f1
+      
+      # Compute medians
+      median_results[[l]][[model_type]][[version]] <- list(
+        auc_median = median(auc_values, na.rm = TRUE),
+        balanced_acc_median = median(balanced_acc_values, na.rm = TRUE),
+        f1_median = median(f1_values, na.rm = TRUE)
+      )
+    }
+  }
+}
+
+# View the median results
+median_results
 
