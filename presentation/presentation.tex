@@ -1,7 +1,7 @@
 \documentclass{beamer}
 
 % THEME SETTINGS
-\usetheme{Singapore}
+\usetheme{CambridgeUS}
 \usecolortheme{dolphin}
 
 % Bibliography
@@ -52,9 +52,10 @@
     \hline
     Parameter & Values & Description \\ 
     \hline
-    $n_\text{train}$ & 250, 1000, 5000 & Train set size \\  
-    $n_\text{test}$ & 250 & Test set size \\
-    $\pi$ & 0.1, 0.05, 0.025 & Proportion of rare examples \\
+    $n_\text{train}$ & 600, 1000, 5000 & Train set size \\  
+    $n_\text{test}$ & 600 & Test set size \\
+    $\pi$ & 0.10, 0.05, 0.025 & Proportion of rare examples \\
+    $IR$ & 9, 19, 39 & Imbalance ratio \\
     \hline
     \end{tabular}
     \caption{Parameters of the simulation}
@@ -98,12 +99,65 @@
   \end{figure}
 \end{frame}
 
+\begin{frame}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/data.png}
+    \caption{Data generated with $size = 5000$ and $prop = 0.025$}
+    \label{fig:data}
+  \end{figure}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Assessment Method}
+  \begin{itemize}
+    \item 100 Static Train/Test Division (test size = 600)
+    \item Metrics: Balanced Accuracy, F1 Score
+    \item Models: Decision Tree, Logistic Regression
+    \item Comparisons with Boxplots
+  \end{itemize}
+\end{frame}
+
+
+
 
 
 %%%%%%%%%%%%%%%% Agnese %%%%%%%%%%%%%%%%%%%%%
 
 
+% AGNESE 
 
+\begin{frame}{SMOTE}
+  \begin{figure}
+      \centering
+      \includegraphics[width=0.8\linewidth]{figures/smote.png}
+      \caption{Synthetic data generated with SMOTE}
+      \label{fig:label1}
+  \end{figure}
+\end{frame}
+
+
+
+\begin{frame}{Dirichlet SMOTE}
+  \begin{figure}
+      \centering
+      \includegraphics[width=0.7\linewidth]{figures/dirichlet.png}
+      \caption{Synthetic data generated with Dirichlet SMOTE using Dirichlet distribution: $P(p|\alpha) \sim Dir(\alpha_1, ... , \alpha_k) = \frac{\Gamma(\sum_j \alpha_j )}{\Pi_j \Gamma(\alpha_j)} \Pi_{j = 1}^{k} p_j^{\alpha_j -1}$ \cite{matharaarachchi2024enhancing}. $\alpha = 1$, $k = 3,5$.}
+      \label{fig:label2}
+  \end{figure}    
+\end{frame}
+
+
+
+
+\begin{frame}{Comparison between SMOTE and Dirichlet SMOTE}
+\begin{figure}
+  \centering
+  \includegraphics[width=1.03\linewidth, height = 6.5cm]{figures/combined.png}
+  \label{fig:label3}
+\end{figure}   
+\end{frame}
 
 
 
