@@ -51,7 +51,7 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
     g <- matrix(0, nrow = sum_dup, ncol = K)
     for(j in 1:sum_dup) {
       # Why use 4?
-      g[j, ] <- MCMCpack::rdirichlet(1, rep(2, K))
+      g[j, ] <- MCMCpack::rdirichlet(1, rep(1, K))
     }
     
     # multiplies the sum_dup weights for the k neighbors
@@ -91,7 +91,9 @@ SMOTE.DIRICHLET <- function (X, target, K = 5, dup_size = 0)
 # y = 1 less frequent class
 y <- c(0, 1)
 train_size <- c(600, 1000, 5000)
-pi <- c(0.1, 0.05, 0.025, 0.01)
+pi <- c(0.1, 0.05, 0.025)
+
+n_trainsets = 9
 
 # Parameters of distribution of the two features
 mu_0 <- c(0, 0)
@@ -103,11 +105,13 @@ cov_matrix_1 <- matrix(c(1, -0.5, -0.5, 1), nrow = 2)
 
 
 # Create a list of 12 lists to store results for each trainset
-results <- vector("list", 12)  # One entry for each trainset
-names(results) <- paste0("Trainset_", 1:12)
+results <- vector("list", n_trainsets)  # One entry for each trainset
+names(results) <- paste0("Trainset_", 1:n_trainsets)
+
+n_simulations = 100
 
 # Loop through each trainset and initialize model results
-for (l in 1:12) {
+for (l in 1:n_trainsets) {
   results[[l]] <- list(
     logistic_regressor = vector("list", 3),         # 3 versions for KNN
     decision_tree = vector("list", 3)        # 3 versions for decision tree
@@ -117,10 +121,10 @@ for (l in 1:12) {
   for (model_type in c("logistic_regressor", "decision_tree")) {
     for (version in 1:3) {
       results[[l]][[model_type]][[version]] <- list(
-        auc = numeric(100),        # AUC values
-        precision = numeric(100),   # Precision values
-        recall = numeric(100),      # Recall values
-        f1 = numeric(100)           # F1 values
+        auc = numeric(n_simulations),        # AUC values
+        precision = numeric(n_simulations),   # Precision values
+        recall = numeric(n_simulations),      # Recall values
+        f1 = numeric(n_simulations)           # F1 values
       )
     }
   }
@@ -128,7 +132,6 @@ for (l in 1:12) {
 
 
 
-n_simulations = 100
 # 100 simulations !!!!!!!!!!!!!!!!!!!
 for (k in 1:n_simulations){
   trainsets <- list()
@@ -178,7 +181,7 @@ for (k in 1:n_simulations){
   
   ###############################################################################
   
-  for (i in 1:12){
+  for (i in 1:n_trainsets){
     trainset <- trainsets[[i]]
     trainset_name <- names(trainsets)[i]
     
