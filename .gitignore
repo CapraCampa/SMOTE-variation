@@ -6,3 +6,7 @@
 *.nav
 *.snm
 *.gz
+.Rapp.history
+dirichlet.R 
+.Rhistory 
+Fin_ds.rds
