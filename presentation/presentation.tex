@@ -1,5 +1,9 @@
 \documentclass{beamer}
 
+% FRAMES
+\usepackage{graphicx}
+\usepackage{animate}
+
 % THEME SETTINGS
 \usetheme{CambridgeUS}
 \usecolortheme{dolphin}
@@ -23,24 +27,28 @@
   \titlepage
 \end{frame}
 
-% SLIDE 1
+
+%%%%%%%%%%%%%%%% Christian %%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
 \begin{frame}
-  \frametitle{Content}
+  \frametitle{Introduction}
+  Problem of \textbf{unbalanced data} in classification problems:
   \begin{itemize}
-    \item Introduction to the problem
-    \item Data generation / Assessment method 
-    \item SMOTE-DIRICHLET
-    \item Results
+    \item Solutions at the \textbf{algorithm level}: cost-sensitive learning, ensemble methods
+    \item Solutions at the \textbf{data level}: oversampling, undersampling, syntethic data (SMOTE, ROSE)
   \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%% Valeria %%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \textbf{Aim} of the project:
+  \begin{itemize}
+    \item Generate synthetic data using the variant SMOTE-DIRICHLET
+    \item Compare models trained on unbalanced dataset, balanced with SMOTE and balanced with SMOTE-DIRICHLET
+  \end{itemize}
+\end{frame}
 
 
-
-%%%%%%%%%%%%%%%% Christian %%%%%%%%%%%%%%%%%%%%%
-
-\section{Data Generation}
 
 \begin{frame}
   \frametitle{Data Generation Process}
@@ -58,7 +66,7 @@
     $IR$ & 9, 19, 39 & Imbalance ratio \\
     \hline
     \end{tabular}
-    \caption{Parameters of the simulation}
+    \caption{Parameters of the 100 simulations}
     \label{table:parameters}
     \end{table}
 
@@ -90,29 +98,29 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{Data Generation}
+  \frametitle{Contour Plot of the Data Distribution}
   \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/contour_data.png}
+    \includegraphics[width=0.8\textwidth]{figures/cont_plot.png}
     \caption{Contour plot of the data distribution}
     \label{fig:contour_data}
   \end{figure}
 \end{frame}
 
 \begin{frame}
+  \frametitle{Example of Generated Data}
   \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/data.png}
-    \caption{Data generated with $size = 5000$ and $prop = 0.025$}
+    \includegraphics[width=0.7\textwidth]{images/data.pdf}
+    \caption{Data generated with $size = 5000$ and $\pi = 0.025$}
     \label{fig:data}
   \end{figure}
 \end{frame}
 
-
 \begin{frame}
   \frametitle{Assessment Method}
   \begin{itemize}
-    \item 100 Static Train/Test Division (test size = 600)
+    \item 100 Static Train/Test Division
     \item Metrics: Balanced Accuracy, F1 Score
     \item Models: Decision Tree, Logistic Regression
     \item Comparisons with Boxplots
@@ -122,28 +130,26 @@
 
 
 
-
 %%%%%%%%%%%%%%%% Agnese %%%%%%%%%%%%%%%%%%%%%
 
 
 % AGNESE 
 
+\section{SMOTE-DIRICHLET}
 \begin{frame}{SMOTE}
   \begin{figure}
       \centering
-      \includegraphics[width=0.8\linewidth]{figures/smote.png}
+      \includegraphics[width=0.75\linewidth]{images/smote.pdf}
       \caption{Synthetic data generated with SMOTE}
       \label{fig:label1}
   \end{figure}
 \end{frame}
 
-
-
-\begin{frame}{Dirichlet SMOTE}
+\begin{frame}{SMOTE-DIRICHLET}
   \begin{figure}
       \centering
-      \includegraphics[width=0.7\linewidth]{figures/dirichlet.png}
-      \caption{Synthetic data generated with Dirichlet SMOTE using Dirichlet distribution: $P(p|\alpha) \sim Dir(\alpha_1, ... , \alpha_k) = \frac{\Gamma(\sum_j \alpha_j )}{\Pi_j \Gamma(\alpha_j)} \Pi_{j = 1}^{k} p_j^{\alpha_j -1}$ \cite{matharaarachchi2024enhancing}. $\alpha = 1$, $k = 3,5$.}
+      \includegraphics[width=0.7\linewidth]{images/dirichlet.pdf}
+      \caption{Synthetic data generated with Dirichlet SMOTE using Dirichlet distribution: $P(p|\alpha) \sim Dir(\alpha_1, ... , \alpha_k) = \frac{\Gamma(\sum_j \alpha_j )}{\Pi_j \Gamma(\alpha_j)} \Pi_{j = 1}^{k} p_j^{\alpha_j -1}$. $\alpha = 1$, $k = 3,5$. \cite{matharaarachchi2024enhancing}}
       \label{fig:label2}
   \end{figure}    
 \end{frame}
@@ -154,21 +160,102 @@
 \begin{frame}{Comparison between SMOTE and Dirichlet SMOTE}
 \begin{figure}
   \centering
-  \includegraphics[width=1.03\linewidth, height = 6.5cm]{figures/combined.png}
+  \includegraphics[width=\linewidth, height = 6.5cm]{images/combined.pdf}
   \label{fig:label3}
 \end{figure}   
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%% Andrea %%%%%%%%%%%%%%%%%%%%%
 
+\section{Results}
+
+\begin{frame}{Metrics of Tree Model}
+  \begin{figure}
+    \begin{minipage}{0.47\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Tree_balanced_accuracy_default_threshold.pdf}
+      \label{fig:label4}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.47\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Tree_f1_default_threshold.pdf}
+      \label{fig:label5}
+    \end{minipage}
+    \caption{Distribution of the balanced accuracy and F1 for the classification tree. Each boxplot refers to a different couple of trainset and testset. The threshold for all models is left as default (0.5).}
+  \end{figure}
+\end{frame}
 
 
 
 
+\begin{frame}{Metrics of Logistic Regression Model}
+  \begin{figure}
+    \begin{minipage}{0.42\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Logit_balanced_accuracy_default_threshold.pdf}
+      \label{fig:label6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.42\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Logit_f1_default_threshold.pdf}
+      \label{fig:label7}
+    \end{minipage}
+    \caption{Distribution of the balanced accuracy and F1 for the logit model. Each boxplot refers to a different couple of trainset and testset. The threshold for all models is left as default (0.5).}
+  \end{figure}
+\end{frame}
 
 
+
+\begin{frame}{Metrics of Tree Model with Optimized Threshold}
+  \begin{figure}
+    \begin{minipage}{0.42\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Tree_balanced_accuracy_optimized_threshold.pdf}
+      \label{fig:label8}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.42\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Tree_f1_optimized_threshold.pdf}
+      \label{fig:label9}
+    \end{minipage}
+    \caption{Distribution of the balanced accuracy and F1 for the classification tree. Each boxplot refers to a different couple of trainset and testset. The threshold for the model learned on unbalanced data is equal to $\pi$.}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{Metrics of Logistic Regression Model with Optimized Threshold}
+  \begin{figure}
+    \begin{minipage}{0.42\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Logit_balanced_accuracy_optimized_threshold.pdf}
+      \label{fig:label10}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.42\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Logit_f1_optimized_threshold.pdf}
+      \label{fig:label11}
+    \end{minipage}
+    \caption{Distribution of the balanced accuracy and F1 for the logit model. Each boxplot refers to a different couple of trainset and testset. The threshold for the model learned on unbalanced data is equal to $\pi$.}
+  \end{figure}
+\end{frame}
+
+
+  \begin{frame}{Decision boundaries of logistic models}
+   \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/compare_predictions_1.pdf}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/compare_predictions_2.pdf}
+    \end{minipage}   
+  \end{frame}
 
 %%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%
 

@@ -1,0 +1,181 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global}
+    \entry{chawla2002smote}{article}{}
+      \name{author}{4}{}{%
+        {{hash=07f6b2699d3cab07b3a5b04353899cba}{%
+           family={Chawla},
+           familyi={C\bibinitperiod},
+           given={Nitesh\bibnamedelima V},
+           giveni={N\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
+        {{hash=07156c210eaf004bb9d8ec5b07f02d55}{%
+           family={Bowyer},
+           familyi={B\bibinitperiod},
+           given={Kevin\bibnamedelima W},
+           giveni={K\bibinitperiod\bibinitdelim W\bibinitperiod}}}%
+        {{hash=3f083c041520d8fa6be3faa597476d15}{%
+           family={Hall},
+           familyi={H\bibinitperiod},
+           given={Lawrence\bibnamedelima O},
+           giveni={L\bibinitperiod\bibinitdelim O\bibinitperiod}}}%
+        {{hash=7cf2422c92b85e461acc6dd47fdb3ba8}{%
+           family={Kegelmeyer},
+           familyi={K\bibinitperiod},
+           given={W\bibnamedelima Philip},
+           giveni={W\bibinitperiod\bibinitdelim P\bibinitperiod}}}%
+      }
+      \strng{namehash}{6bcc313fb25bc61f74b62ca709ae4b05}
+      \strng{fullhash}{c8dfb87590a41f2f9294282b456dede4}
+      \strng{bibnamehash}{6bcc313fb25bc61f74b62ca709ae4b05}
+      \strng{authorbibnamehash}{6bcc313fb25bc61f74b62ca709ae4b05}
+      \strng{authornamehash}{6bcc313fb25bc61f74b62ca709ae4b05}
+      \strng{authorfullhash}{c8dfb87590a41f2f9294282b456dede4}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of artificial intelligence research}
+      \field{title}{SMOTE: synthetic minority over-sampling technique}
+      \field{volume}{16}
+      \field{year}{2002}
+      \true{nocite}
+      \field{pages}{321\bibrangedash 357}
+      \range{pages}{37}
+    \endentry
+    \entry{lunardon2014rose}{article}{}
+      \name{author}{3}{}{%
+        {{hash=ae70a057b7ed8537931feb9682e04940}{%
+           family={Lunardon},
+           familyi={L\bibinitperiod},
+           given={Nicola},
+           giveni={N\bibinitperiod}}}%
+        {{hash=7dfe17b8a97de26dcd04146cf84d6b8a}{%
+           family={Menardi},
+           familyi={M\bibinitperiod},
+           given={Giovanna},
+           giveni={G\bibinitperiod}}}%
+        {{hash=6422318efc693795d58ef8cf21730806}{%
+           family={Torelli},
+           familyi={T\bibinitperiod},
+           given={Nicola},
+           giveni={N\bibinitperiod}}}%
+      }
+      \strng{namehash}{2cbfcaef17552735998e047138d97ccb}
+      \strng{fullhash}{2cbfcaef17552735998e047138d97ccb}
+      \strng{bibnamehash}{2cbfcaef17552735998e047138d97ccb}
+      \strng{authorbibnamehash}{2cbfcaef17552735998e047138d97ccb}
+      \strng{authornamehash}{2cbfcaef17552735998e047138d97ccb}
+      \strng{authorfullhash}{2cbfcaef17552735998e047138d97ccb}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{R journal}
+      \field{number}{1}
+      \field{title}{ROSE: a package for binary imbalanced learning.}
+      \field{volume}{6}
+      \field{year}{2014}
+      \true{nocite}
+    \endentry
+    \entry{matharaarachchi2024enhancing}{article}{}
+      \name{author}{3}{}{%
+        {{hash=8295686c5a2dc1410f2c0f81968eae16}{%
+           family={Matharaarachchi},
+           familyi={M\bibinitperiod},
+           given={Surani},
+           giveni={S\bibinitperiod}}}%
+        {{hash=47d2dd8bc85ddc740cc6e0eca0461d4a}{%
+           family={Domaratzki},
+           familyi={D\bibinitperiod},
+           given={Mike},
+           giveni={M\bibinitperiod}}}%
+        {{hash=5bc7b6ee2a281b48d0e0382fec7c81df}{%
+           family={Muthukumarana},
+           familyi={M\bibinitperiod},
+           given={Saman},
+           giveni={S\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{397f456053d37c824a95d0de8452b80e}
+      \strng{fullhash}{397f456053d37c824a95d0de8452b80e}
+      \strng{bibnamehash}{397f456053d37c824a95d0de8452b80e}
+      \strng{authorbibnamehash}{397f456053d37c824a95d0de8452b80e}
+      \strng{authornamehash}{397f456053d37c824a95d0de8452b80e}
+      \strng{authorfullhash}{397f456053d37c824a95d0de8452b80e}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Machine Learning with Applications}
+      \field{title}{Enhancing SMOTE for imbalanced data with abnormal minority instances}
+      \field{volume}{18}
+      \field{year}{2024}
+      \field{pages}{100597}
+      \range{pages}{1}
+    \endentry
+    \entry{menardi2014training}{article}{}
+      \name{author}{2}{}{%
+        {{hash=7dfe17b8a97de26dcd04146cf84d6b8a}{%
+           family={Menardi},
+           familyi={M\bibinitperiod},
+           given={Giovanna},
+           giveni={G\bibinitperiod}}}%
+        {{hash=6422318efc693795d58ef8cf21730806}{%
+           family={Torelli},
+           familyi={T\bibinitperiod},
+           given={Nicola},
+           giveni={N\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{3204131e6ce227afa5312fd8faf10c00}
+      \strng{fullhash}{3204131e6ce227afa5312fd8faf10c00}
+      \strng{bibnamehash}{3204131e6ce227afa5312fd8faf10c00}
+      \strng{authorbibnamehash}{3204131e6ce227afa5312fd8faf10c00}
+      \strng{authornamehash}{3204131e6ce227afa5312fd8faf10c00}
+      \strng{authorfullhash}{3204131e6ce227afa5312fd8faf10c00}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Data mining and knowledge discovery}
+      \field{title}{Training and assessing classification rules with imbalanced data}
+      \field{volume}{28}
+      \field{year}{2014}
+      \true{nocite}
+      \field{pages}{92\bibrangedash 122}
+      \range{pages}{31}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

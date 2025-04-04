@@ -1,0 +1,22 @@
+\documentclass{beamer}
+\usepackage{media9} % Load the media9 package
+\usepackage{hyperref}
+\usepackage{animate} % Load the animate package
+
+\begin{document}
+
+\begin{frame}
+  % Use \includemedia instead of \includemovie
+  \begin{figure}
+    \centering
+     \animategraphics[width=\textwidth,loop,autoplay]{1}%frame rate
+     \animategraphics[width=\textwidth, loop, autoplay]{1}%frame rate
+    {figures/frame\_00}%path to figures
+    {1}%start index
+    {9}%end index
+    \caption{Local gif}
+    \label{fig:my_label}
+  \end{figure}
+\end{frame}
+
+\end{document}

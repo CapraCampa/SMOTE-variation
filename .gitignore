@@ -12,3 +12,6 @@
 *.bcf
 *.blg
 *.xml
+*.Rhistory
+*.history
+*.rds
